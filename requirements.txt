@@ -1,0 +1,23 @@
+# Requirements for runtime only.
+addict
+click
+coloredlogs
+importlib-metadata
+jupyterlab==3.0.16
+kafka-python
+mpi4py
+numpy
+opencv-python-headless
+Pillow
+prettytable
+pydantic
+pynvml
+setuptools-scm
+tabulate
+tensorboard
+torch
+torch_tb_profiler
+torchvision
+tqdm
+tvm
+triton

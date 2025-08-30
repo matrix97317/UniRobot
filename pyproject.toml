@@ -1,0 +1,59 @@
+# Use leading comments since `toml-sort` will remove all other comments.
+# Reference: https://github.com/pappasam/toml-sort/issues/11
+# - build-system:
+# - build-backend:
+# Use the new standard way (PEP 517) to build package.
+# Reference: https://setuptools.pypa.io/en/latest/build_meta.html#how-to-use-it
+# - requires:
+# Build requirements for setuptools_scm.
+# Reference: https://github.com/pypa/setuptools_scm/#pyprojecttoml-usage
+# - tool.isort:
+# - force_single_line:
+# Forces all from imports to appear on their own line.
+# Reference: https://www.python.org/dev/peps/pep-0008/#imports
+# Reference: E401 on https://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+# - lines_after_imports:
+# Force two blank lines after import for consistency.
+# - profile:
+# Make isort compatible with black.
+# Reference: https://black.readthedocs.io/en/stable/guides/using_black_with_other_tools.html#isort
+# - tools.mypy.overrides:
+# MyPy Settings for the third-party libraries that is not compatible with mypy.
+# - tool.setuptools_scm:
+# Enable scm based version provided by setuptools_scm.
+# Reference: https://github.com/pypa/setuptools_scm/#pyprojecttoml-usage
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools>=45",
+  "setuptools_scm>=6.2",
+  "wheel"
+]
+
+[tool.isort]
+force_single_line = true
+lines_after_imports = 2
+profile = "black"
+
+[tool.mypy]
+disable_error_code = [
+  "union-attr"
+]
+enable_error_code = [
+  "ignore-without-code"
+]
+# exclude = []
+ignore_missing_imports = true
+show_error_codes = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+addopts = "-l -s -v --color=yes --durations=0 --cov-report xml --cov-report term"
+log_cli = true
+log_cli_level = "info"
+log_date_format = "%Y-%m-%d %H:%M:%S"
+log_format = "%(asctime)s %(levelname)s %(message)s"
+minversion = "6.0"
+
+[tool.setuptools_scm]
