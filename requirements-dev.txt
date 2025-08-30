@@ -1,0 +1,35 @@
+# Requirements for development only.
+# Generally it is not supposed to be changed.
+black
+build
+# New version of flake8 broken many plugins.
+flake8 < 5
+flake8-absolute-import
+flake8-bandit
+flake8-black
+flake8-comprehensions
+flake8-docstrings
+flake8-isort
+flake8-logging-format
+flake8-noqa
+flake8-print
+flake8-pytest
+flake8-pytest-style
+flake8-quotes
+flake8-requirements
+flake8-use-fstring
+furo
+mypy
+pep8-naming
+pip-check-reqs
+pylint
+pylint-pytest
+pytest
+pytest-cov
+Sphinx
+sphinx-autobuild
+sphinx-click
+toml-sort
+twine
+types-setuptools
+types-tabulate

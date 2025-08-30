@@ -1,0 +1,70 @@
+stages:
+  - format_checker
+  - tester
+  - release
+  - build_pages
+
+lint:
+  stage: format_checker
+  image: your_docker_image
+  script:
+    - env | sort
+    - nvidia-smi
+    - make dev
+    - make lint
+  only:
+    - merge_requests
+    - /^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$/
+  tags:
+    - your git lab ci-runner-tag
+  interruptible: true
+
+test:
+  stage: tester
+  image: your_docker_image
+  script:
+    - env | sort
+    - nvidia-smi
+    - make dev
+    - make test
+  only:
+    - merge_requests
+    - /^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$/
+  tags:
+    - your git lab ci-runner-tag
+  interruptible: true
+
+package:
+  stage: release
+  image: your_docker_image
+  script:
+    - env | sort
+    - make build
+    - make upload
+  only:
+    - /^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$/
+  tags:
+    - your git lab ci-runner-tag
+  interruptible: true
+
+pages:
+  stage: build_pages
+  image: your_docker_image
+  script:
+    - make dev
+    - make docs
+  artifacts:
+    paths:
+      - public
+  only:
+    refs:
+      - master
+      - /^v(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)$/
+    changes:
+      - docs/**/*
+  except:
+    refs:
+      - schedules
+  tags:
+    - your git lab ci-runner-tag
+  interruptible: true
