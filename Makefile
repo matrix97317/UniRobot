@@ -38,13 +38,13 @@ venv:
 
 # Install package in editable mode without dev packages.
 install: venv
-	${PIPRUN} pip install --no-build-isolation  -e . 
+	${PIPRUN} pip install --no-build-isolation  -e .
 
 # Prepare dev environments:
 # - Install package in editable mode alongside with dev requirements.
 # - Install pre-commit hoook when not in CI environment.
 dev: venv
-	${PIPRUN} pip install --no-build-isolation  -e . -r requirements-dev.txt -r requirements.txt 
+	${PIPRUN} pip install --no-build-isolation  -e . -r requirements-dev.txt -r requirements.txt
 	-[ "${CI}" != "true" ] && pre-commit install --hook-type pre-push
 
 # Run pre-commit for all files.

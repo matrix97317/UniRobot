@@ -48,6 +48,7 @@ disable=c-extension-no-member,
         too-many-lines,
         use-dict-literal,
         arguments-differ,
+        line-too-long
 
 [SIMILARITIES]
 
