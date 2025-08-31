@@ -33,4 +33,5 @@ UniRobot 是一个由机器人大脑(数据，模型，模型训练)和机器人
 
 ### Acknowledgements
 
-- Project Scaffold，From：https://github.com/serious-scaffold/serious-scaffold-python
+- Project Scaffold, From：https://github.com/serious-scaffold/serious-scaffold-python
+- Megatron-LM, From: https://github.com/NVIDIA/Megatron-LM.git
