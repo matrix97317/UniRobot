@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """UniRobot ModelFlow."""
-from distutils.version import LooseVersion
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -15,9 +14,6 @@ from torch import nn
 from unirobot.brain.model.full_model.base_full_model import BaseFullModel
 from unirobot.utils.unirobot_slot import FULL_MODEL
 from unirobot.utils.unirobot_slot import LOSS
-
-
-
 
 
 class ModelFlow(torch.nn.Module):
@@ -85,7 +81,6 @@ class ModelFlow(torch.nn.Module):
         traced_model = traced_model.cuda(device=torch.cuda.current_device())
 
         return traced_model
-
 
     def forward(
         self,

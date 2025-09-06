@@ -19,6 +19,7 @@ def _forward_unimplemented(*args, **kwargs) -> Any:
         f"The number of keyword arguments: {len(kwargs)}."
     )
 
+
 class BaseFullModel(torch.nn.Module, ABC):
     """Full Model Interface.
 

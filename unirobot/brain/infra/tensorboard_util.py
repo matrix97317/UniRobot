@@ -7,9 +7,6 @@ from typing import List
 from torch.utils.tensorboard import SummaryWriter
 
 
-from unirobot.utils.settings import settings
-
-
 class TensorboardUtil:
     """Tensorboard Manager."""
 
@@ -83,7 +80,6 @@ class TensorboardUtil:
             ):
                 tag = "efficiency/" + tag
             self._writer.add_scalar(tag, float(value), global_step=global_step_idx)
-          
 
     def close(self):
         """Close Writer."""

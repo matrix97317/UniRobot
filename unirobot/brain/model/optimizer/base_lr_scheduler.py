@@ -11,6 +11,7 @@ from typing import Dict
 from typing import List
 from typing import Union
 from typing import Optional
+
 import numpy as np
 from torch.optim import Optimizer
 
@@ -195,7 +196,7 @@ class EpochLrScheduler(BaseLrScheduler):
     def __init__(
         self,
         optimizer: Optional[Optimizer] = None,
-        decay_boundary:Optional[Union[int, List[int]]] = None,
+        decay_boundary: Optional[Union[int, List[int]]] = None,
         gamma: float = 0.1,
         min_lr: float = 0.000001,
         warmup_type: Optional[str] = None,

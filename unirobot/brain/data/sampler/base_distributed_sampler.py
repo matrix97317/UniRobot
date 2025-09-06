@@ -270,8 +270,8 @@ class URDistributedSampler(Sampler[T_co]):
                         "So _index_repeat should have same value."
                         f"{self._index_repeat}"
                     )
-                np_indices = np.repeat(np_indices, self._index_repeat[0], axis=0) # type: ignore[assignment]
-                indices = np_indices.flatten().tolist() # type: ignore[attr-defined]
+                np_indices = np.repeat(np_indices, self._index_repeat[0], axis=0)  # type: ignore[assignment]
+                indices = np_indices.flatten().tolist()  # type: ignore[attr-defined]
 
                 indices = [
                     (

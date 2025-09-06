@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-"""demo model.
-"""
+"""demo model."""
 from collections import namedtuple
 from typing import Any
 from typing import Dict

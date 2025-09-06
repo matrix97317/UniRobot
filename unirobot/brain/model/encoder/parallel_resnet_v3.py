@@ -11,7 +11,6 @@ from typing import Union
 import torch
 from torch import nn
 
-
 from unirobot.brain.infra.distributed.initialization.parallel_state import (
     get_pipeline_model_parallel_rank,
 )
@@ -528,6 +527,10 @@ class ResNet18(torch.nn.Module):
         """
         return self.base_model(inputs)
 
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
+
 
 class ResNet34(torch.nn.Module):
     """Resnet34.
@@ -576,6 +579,10 @@ class ResNet34(torch.nn.Module):
             Forward results (torch.Tensor).
         """
         return self.base_model(inputs)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
 
 
 class ParallelResNet50V3(torch.nn.Module):
@@ -629,7 +636,8 @@ class ParallelResNet50V3(torch.nn.Module):
         """
         return self.base_model(inputs)
 
-    def forward(self,inputs: torch.Tensor)->torch.Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
         return self.train_forward(inputs)
 
 
@@ -680,6 +688,10 @@ class ResNet101(torch.nn.Module):
         """
         return self.base_model(inputs)
 
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
+
 
 class ResNet152(torch.nn.Module):
     """Resnet152.
@@ -727,6 +739,10 @@ class ResNet152(torch.nn.Module):
             Forward results (torch.Tensor).
         """
         return self.base_model(inputs)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
 
 
 class ResNet50W4G32(torch.nn.Module):
@@ -778,6 +794,10 @@ class ResNet50W4G32(torch.nn.Module):
         """
         return self.base_model(inputs)
 
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
+
 
 class ResNet101G8W32(torch.nn.Module):
     """ResNet101_32x8d.
@@ -828,6 +848,10 @@ class ResNet101G8W32(torch.nn.Module):
         """
         return self.base_model(inputs)
 
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
+
 
 class WideResNet50W128(torch.nn.Module):
     """WideResNet50_2.
@@ -877,6 +901,10 @@ class WideResNet50W128(torch.nn.Module):
         """
         return self.base_model(inputs)
 
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)
+
 
 class WideResNet101W128(torch.nn.Module):
     """WideResNet101_2.
@@ -925,3 +953,7 @@ class WideResNet101W128(torch.nn.Module):
             Forward results (torch.Tensor).
         """
         return self.base_model(inputs)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        """Forward."""
+        return self.train_forward(inputs)

@@ -41,5 +41,3 @@ class LabelSmoothLoss(BaseLoss):
         smooth_loss = -logprobs.mean(dim=-1)
         loss = self._confidence * nll_loss + self._smoothing * smooth_loss
         return {"loss_cls": loss.mean()}
-
-

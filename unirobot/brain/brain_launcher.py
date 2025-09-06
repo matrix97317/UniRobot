@@ -34,6 +34,7 @@ from unirobot.utils.system_info import show_hardware_info
 from unirobot.utils.unirobot_slot import INFERRER
 from unirobot.utils.unirobot_slot import TRAINER
 
+
 logger = logging.getLogger(__name__)
 
 DATETIME_FORMAT = "%Y%m%dT%H%M%S"
@@ -242,7 +243,7 @@ def runtime_program(
         dataset_mode (str): Which mode specified to dataset.
     """
     # print("----- Demo Code ------")
-    #parser cfg
+    # parser cfg
     config_cfg = PyConfig.fromfile(cfg)
     args = {
         "cfg": config_cfg,
@@ -274,8 +275,6 @@ def runtime_program(
             config_cfg.dataloader["dataset_cfg"]["mode"] = dataset_mode
         trainer = TRAINER.build(args)
         trainer.train()
-
-  
 
 
 def run(

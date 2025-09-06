@@ -52,7 +52,7 @@ class ComposeWeightedLoss(BaseLoss):
     ) -> Dict[str, Any]:
         """Calculate Loss."""
         total_loss_dict: Dict[str, Any] = {}
-        for (loss_weight, loss_func) in self._loss_func_list:
+        for loss_weight, loss_func in self._loss_func_list:
             loss_dict = loss_func(model_outputs, model_inputs)
 
             for loss_name, loss_value in loss_dict.items():

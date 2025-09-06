@@ -191,7 +191,7 @@ class ParallelTrainer(BaseTrainer):  # pylint: disable=too-many-instance-attribu
         use_fsdp: bool = False,
         use_nsight: bool = False,
         nsight_warmup_iters: int = 10,
-        megatron_optimizer_params:Optional[Dict] = None,
+        megatron_optimizer_params: Optional[Dict] = None,
         data_parallel_random_init: bool = True,
         accumulate_allreduce_grads_in_fp32: bool = True,
         use_contiguous_buffers_in_local_ddp: bool = True,
@@ -289,9 +289,7 @@ class ParallelTrainer(BaseTrainer):  # pylint: disable=too-many-instance-attribu
         self._use_log_grad = use_log_grad
         if self._use_tensorboard:
             self._summary = TensorboardUtil(
-                log_dir=os.path.join(
-                    FileUtil.get_summary_dir(), f"rank{self._rank}"
-                ),
+                log_dir=os.path.join(FileUtil.get_summary_dir(), f"rank{self._rank}"),
                 comment=self._run_name,
                 rank=self._rank,
             )
@@ -450,14 +448,14 @@ class ParallelTrainer(BaseTrainer):  # pylint: disable=too-many-instance-attribu
                     ]
 
                 if "backoff_factor" in self._amp_scaler_params:
-                    actual_amp_scaler_params[
-                        "backoff_factor"
-                    ] = self._amp_scaler_params["backoff_factor"]
+                    actual_amp_scaler_params["backoff_factor"] = (
+                        self._amp_scaler_params["backoff_factor"]
+                    )
 
                 if "growth_interval" in self._amp_scaler_params:
-                    actual_amp_scaler_params[
-                        "growth_interval"
-                    ] = self._amp_scaler_params["growth_interval"]
+                    actual_amp_scaler_params["growth_interval"] = (
+                        self._amp_scaler_params["growth_interval"]
+                    )
 
                 logger.warning(
                     "You set amp_scaler_params as %s", actual_amp_scaler_params
@@ -476,7 +474,9 @@ class ParallelTrainer(BaseTrainer):  # pylint: disable=too-many-instance-attribu
         self._full_model = (
             self._model_flow._full_model  # pylint: disable=protected-access
         )
-        self._loss_func = self._model_flow._loss_func  # pylint: disable=protected-access
+        self._loss_func = (
+            self._model_flow._loss_func
+        )  # pylint: disable=protected-access
 
         if not isinstance(self._model_flow, ModelFlow):
             raise ValueError(
@@ -1179,7 +1179,7 @@ class ParallelTrainer(BaseTrainer):  # pylint: disable=too-many-instance-attribu
         if self._pipeline_parallel_size > 1:
             one_step_samples = self._bs_per_gpu * get_data_parallel_world_size()
         else:
-            one_step_samples = self._bs_per_gpu * world_size # type: ignore[operator]
+            one_step_samples = self._bs_per_gpu * world_size  # type: ignore[operator]
 
         if one_step_time_cost > 0.0:
             time_cost = [

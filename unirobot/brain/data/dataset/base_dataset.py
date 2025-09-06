@@ -17,7 +17,6 @@ from torch.utils.data.dataset import T_co
 from torchvision.transforms import Compose
 
 from unirobot.utils.unirobot_slot import TRANSFORM
-from unirobot.utils.settings import settings
 
 
 logger = logging.getLogger(__name__)
@@ -148,4 +147,3 @@ class BaseDataset(Dataset[T_co], ABC):
             List of str: each element is a labeling task id.
         """
         return []
-

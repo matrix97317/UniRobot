@@ -37,8 +37,7 @@ trainer = dict(
     seed=seed,
     use_data_stream=True,
     use_eval_mode=False,
-    eval_ckpt_list=[
-    ],
+    eval_ckpt_list=[],
 )
 
 # define lr scheduler params

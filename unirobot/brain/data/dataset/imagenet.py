@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """Dataset of ImageNet."""
-
-import io
 import logging
 from typing import Any
 from typing import Dict
@@ -53,7 +51,6 @@ class ImageNetDataset(BaseDataset):
         self._data_paths = self._meta_file[self._mode]  # type: ignore[index]
         # self._cache_records = self.parse_meta_file()
         logger.info("Data path: %s.", self._data_paths)
-        
 
     def __getitem__(self, idx: int) -> Dict[str, Union[np.ndarray, int]]:
         """Get one item.
@@ -66,8 +63,8 @@ class ImageNetDataset(BaseDataset):
         """
         # data_path, gt = self._cache_records[idx]
         # image = self.data_reader(data_path)
-        image = np.random.randint(0, 256, size=(600,400,3), dtype=np.uint8)
-        gt = np.random.randint(0,1000,size=(1,))[0]
+        image = np.random.randint(0, 256, size=(600, 400, 3), dtype=np.uint8)
+        gt = np.random.randint(0, 1000, size=(1,))[0]
 
         data_dict = {
             "image": Image.fromarray(image),
@@ -117,4 +114,3 @@ class ImageNetDataset(BaseDataset):
     #     with Image.open(io.BytesIO(image_bytes)) as image:
     #         image = image.convert("RGB")
     #     return image
-
