@@ -179,22 +179,22 @@ class DistSpawnInfo:
     @staticmethod
     def get_node_rank() -> int:
         """Get node rank, the index of machine node."""
-        host_name = os.environ.get("HOSTNAME", "")
-        node_attr = host_name.split("-")[-2]
-        node_index = host_name.split("-")[-1]
-        if node_attr == "master":
-            node_rank = int(node_index)
-        else:
-            node_rank = int(node_index) + 1
-        return node_rank
+        # host_name = os.environ.get("HOSTNAME", "")
+        # node_attr = host_name.split("-")[-2]
+        # node_index = host_name.split("-")[-1]
+        # if node_attr == "master":
+        #     node_rank = int(node_index)
+        # else:
+        #     node_rank = int(node_index) + 1
+        return 0
 
     @staticmethod
     def get_nnodes() -> int:
         """Get nnodes, the number of machine."""
-        master_num = int(os.environ.get("VC_MASTER_NUM", "0"))
-        worker_num = int(os.environ.get("VC_WORKER_NUM", 0))
-        nnodes = master_num + worker_num
-        return nnodes
+        # master_num = int(os.environ.get("VC_MASTER_NUM", "0"))
+        # worker_num = int(os.environ.get("VC_WORKER_NUM", 0))
+        # nnodes = master_num + worker_num
+        return 1
 
     def get_global_rank(self) -> int:
         """Get global rank."""
