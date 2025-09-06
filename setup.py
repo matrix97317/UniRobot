@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""The setup.py for torchpilot."""
+"""The setup.py for unirobot."""
 from pkg_resources import parse_requirements
 from setuptools import find_packages
 from setuptools import setup
+
+from slot_entry import unirobot_slot_entry  # noqa: I900
 
 
 # Parse content from `README.md` as long description.
@@ -23,7 +25,7 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     description="UniRobot is an embodied intelligent software framework that integrates the robot brain (data, models, model training) with the robot body (perception, model inference, control).",
-    entry_points={},
+    entry_points=unirobot_slot_entry,
     install_requires=install_requires,
     license="Apache License 2.0",
     long_description=long_description,

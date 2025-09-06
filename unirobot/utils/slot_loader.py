@@ -9,6 +9,7 @@ from unirobot.utils.unirobot_slot import DATALOADER
 from unirobot.utils.unirobot_slot import DATASET
 from unirobot.utils.unirobot_slot import EVALUATOR
 from unirobot.utils.unirobot_slot import DECODER
+from unirobot.utils.unirobot_slot import ENCODER
 from unirobot.utils.unirobot_slot import INFERRER
 from unirobot.utils.unirobot_slot import LAYER
 from unirobot.utils.unirobot_slot import LOSS
@@ -17,6 +18,7 @@ from unirobot.utils.unirobot_slot import OPTIMIZER
 from unirobot.utils.unirobot_slot import SAMPLER
 from unirobot.utils.unirobot_slot import TRAINER
 from unirobot.utils.unirobot_slot import TRANSFORM
+from unirobot.utils.unirobot_slot import MODEL_FLOW
 
 
 if sys.version_info < (3, 10):
@@ -36,12 +38,14 @@ BRAIN_SLOT_MAPPING = {
     EVALUATOR.name: EVALUATOR,
     FULL_MODEL.name: FULL_MODEL,
     DECODER.name: DECODER,
+    ENCODER.name: ENCODER,
     LAYER.name: LAYER,
     LOSS.name: LOSS,
     LR_SCHEDULER.name: LR_SCHEDULER,
     OPTIMIZER.name: OPTIMIZER,
     INFERRER.name: INFERRER,
     TRAINER.name: TRAINER,
+    MODEL_FLOW.name: MODEL_FLOW,
 }
 
 

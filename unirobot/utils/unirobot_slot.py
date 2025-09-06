@@ -29,3 +29,6 @@ OPTIMIZER = Slot("brain.optimizer")
 
 # Evaluator
 EVALUATOR = Slot("brain.evaluator")
+
+# model flow
+MODEL_FLOW = Slot("brain.model_flow")
