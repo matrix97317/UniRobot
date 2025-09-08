@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """The setup.py for unirobot."""
+import json
+
 from pkg_resources import parse_requirements
 from setuptools import find_packages
 from setuptools import setup
-
-from slot_entry import unirobot_slot_entry  # noqa: I900
 
 
 # Parse content from `README.md` as long description.
@@ -14,6 +14,10 @@ with open("README.md", encoding="utf-8") as fh:
 # Parse content from `requirements.txt` as install requires.
 with open("requirements.txt", encoding="utf-8") as fh:
     install_requires = [str(requirement) for requirement in parse_requirements(fh)]
+
+# Load all slot obj.
+with open("slot_entry.json", encoding="utf-8") as fh:
+    unirobot_slot_entry = json.load(fh)
 
 setup(
     author="matrix97317",
