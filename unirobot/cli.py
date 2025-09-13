@@ -6,6 +6,7 @@ from typing import Union
 import click
 
 from unirobot.brain import brain_launcher
+from unirobot.robot import robot_launcher
 
 
 CONTEXT_SETTINGS = {
@@ -100,3 +101,40 @@ def brain_run(
         port,
         dataset_mode,
     )
+
+
+@cli.command()
+@click.argument(
+    "config",
+    type=click.Path(exists=True),
+)
+@click.option(
+    "-n",
+    "--task-name",
+    envvar="UNIROBOT_TASK_NAME",
+    required=True,
+    help="The name of the task.",
+)
+@click.option(
+    "-rt",
+    "--run-type",
+    type=click.Choice(
+        ["teleoperation", "model_local", "model_server"], case_sensitive=False
+    ),
+    required=True,
+    help="Specify the type of run robot, support [teleoperation, model_local, model_server].",
+)
+@click.option(
+    "-rl",
+    "--use-rl",
+    is_flag=True,
+    help="Whether to use RL mode.",
+)
+def robot_run(
+    config: str,
+    task_name: str,
+    run_type: str,
+    use_rl: bool,
+) -> None:
+    """Entry for unirobot transmits variables from here."""
+    robot_launcher.run(config, task_name, run_type, use_rl)

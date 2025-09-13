@@ -19,6 +19,10 @@ from unirobot.utils.unirobot_slot import SAMPLER
 from unirobot.utils.unirobot_slot import TRAINER
 from unirobot.utils.unirobot_slot import TRANSFORM
 from unirobot.utils.unirobot_slot import MODEL_FLOW
+from unirobot.utils.unirobot_slot import ROBOT
+from unirobot.utils.unirobot_slot import TELEOPERATOR
+from unirobot.utils.unirobot_slot import SENSOR
+from unirobot.utils.unirobot_slot import MOTOR
 
 
 if sys.version_info < (3, 10):
@@ -48,10 +52,31 @@ BRAIN_SLOT_MAPPING = {
     MODEL_FLOW.name: MODEL_FLOW,
 }
 
+ROBOT_SLOT_MAPPING = {
+    ROBOT.name: ROBOT,
+    TELEOPERATOR.name: TELEOPERATOR,
+    SENSOR.name: SENSOR,
+    MOTOR.name: MOTOR,
+}
+
 
 def load_brain_slot() -> None:
     """Load Brain Slot."""
     for slot_key, slot in BRAIN_SLOT_MAPPING.items():
+        for entry_point in entry_points(group=slot_key):
+            logger.debug(
+                "Slot `%s` with name `%s` to `%s` Slot.",
+                entry_point.value,
+                entry_point.name,
+                slot_key,
+            )
+            module = import_module(entry_point.value)
+            slot.push(module=getattr(module, entry_point.name))
+
+
+def load_robot_slot() -> None:
+    """Load Robot Slot."""
+    for slot_key, slot in ROBOT_SLOT_MAPPING.items():
         for entry_point in entry_points(group=slot_key):
             logger.debug(
                 "Slot `%s` with name `%s` to `%s` Slot.",
