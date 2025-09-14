@@ -20,11 +20,7 @@ UniRobot 是一个由机器人大脑(数据，模型，模型训练)和机器人
 ### Demo Show
 
 这里你可以快速了解UniRobot的主要功能展示 [demo_show](./md_doc/demo_show.md)
- - 数据采集
 
-Video:<video src="https://raw.githubusercontent.com/matrix97317/UniRobot/main/asset/video/collect_data.mp4"></video>
-
-可视化工具: <video src="https://raw.githubusercontent.com/matrix97317/UniRobot/main/asset/video/vis_data.mp4"></video>
 
 ### Developer Quick Start
 

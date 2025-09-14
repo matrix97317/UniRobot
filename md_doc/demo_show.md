@@ -7,9 +7,9 @@
 ```
 pipenv run unirobot robot-run /path/your_config -n task_name -rt 'teleoperation'
 ```
-Video:<video src="../asset/video/collect_data.mp4"></video>
+Video:[![视频预览](../asset/img/collect_data.png)](https://raw.githubusercontent.com/matrix97317/UniRobot/main/asset/video/collect_data.mp4)
 
-可视化工具: <video src="../asset/video/vis_data.mp4"></video>
+可视化工具:[![视频预览](../asset/img/vis_data.png)](https://raw.githubusercontent.com/matrix97317/UniRobot/main/asset/video/vis_data.mp4)
 
 ### 模型训练
 
