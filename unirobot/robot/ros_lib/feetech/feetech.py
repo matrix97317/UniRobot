@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2024 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +20,14 @@ from pprint import pformat
 import scservo_sdk as scs
 
 
-from unirobot.robot.ros_lib.motors_bus import Motor, MotorCalibration, MotorsBus, NameOrID, Value, get_address
+from unirobot.robot.ros_lib.motors_bus import (
+    Motor,
+    MotorCalibration,
+    MotorsBus,
+    NameOrID,
+    Value,
+    get_address,
+)
 from unirobot.robot.ros_lib.feetech.tables import (
     FIRMWARE_MAJOR_VERSION,
     FIRMWARE_MINOR_VERSION,
@@ -66,8 +74,6 @@ class TorqueMode(Enum):
     DISABLED = 0
 
 
-
-
 def encode_sign_magnitude(value: int, sign_bit_index: int):
     """
     https://en.wikipedia.org/wiki/Signed_number_representations#Sign%E2%80%93magnitude
@@ -75,7 +81,9 @@ def encode_sign_magnitude(value: int, sign_bit_index: int):
     max_magnitude = (1 << sign_bit_index) - 1
     magnitude = abs(value)
     if magnitude > max_magnitude:
-        raise ValueError(f"Magnitude {magnitude} exceeds {max_magnitude} (max for {sign_bit_index=})")
+        raise ValueError(
+            f"Magnitude {magnitude} exceeds {max_magnitude} (max for {sign_bit_index=})"
+        )
 
     direction_bit = 1 if value < 0 else 0
     return (direction_bit << sign_bit_index) | magnitude
@@ -90,8 +98,8 @@ def decode_sign_magnitude(encoded_value: int, sign_bit_index: int):
     magnitude = encoded_value & magnitude_mask
     return -magnitude if direction_bit else magnitude
 
+
 def _split_into_byte_chunks(value: int, length: int) -> list[int]:
-    
 
     if length == 1:
         data = [value]
@@ -117,7 +125,9 @@ def patch_setPacketTimeout(self, packet_length):  # noqa: N802
     patching.
     """
     self.packet_start_time = self.getCurrentTime()
-    self.packet_timeout = (self.tx_time_per_byte * packet_length) + (self.tx_time_per_byte * 3.0) + 50
+    self.packet_timeout = (
+        (self.tx_time_per_byte * packet_length) + (self.tx_time_per_byte * 3.0) + 50
+    )
 
 
 class FeetechMotorsBus(MotorsBus):
@@ -147,7 +157,6 @@ class FeetechMotorsBus(MotorsBus):
         super().__init__(port, motors, calibration)
         self.protocol_version = protocol_version
         self._assert_same_protocol()
-        
 
         self.port_handler = scs.PortHandler(self.port)
         # HACK: monkeypatch
@@ -155,13 +164,19 @@ class FeetechMotorsBus(MotorsBus):
             self.port_handler, scs.PortHandler
         )
         self.packet_handler = scs.PacketHandler(protocol_version)
-        self.sync_reader = scs.GroupSyncRead(self.port_handler, self.packet_handler, 0, 0)
-        self.sync_writer = scs.GroupSyncWrite(self.port_handler, self.packet_handler, 0, 0)
+        self.sync_reader = scs.GroupSyncRead(
+            self.port_handler, self.packet_handler, 0, 0
+        )
+        self.sync_writer = scs.GroupSyncWrite(
+            self.port_handler, self.packet_handler, 0, 0
+        )
         self._comm_success = scs.COMM_SUCCESS
         self._no_error = 0x00
 
         if any(MODEL_PROTOCOL[model] != self.protocol_version for model in self.models):
-            raise ValueError(f"Some motors are incompatible with protocol_version={self.protocol_version}")
+            raise ValueError(
+                f"Some motors are incompatible with protocol_version={self.protocol_version}"
+            )
 
     def _assert_same_protocol(self) -> None:
         if any(MODEL_PROTOCOL[model] != self.protocol_version for model in self.models):
@@ -191,16 +206,22 @@ class FeetechMotorsBus(MotorsBus):
         self._assert_motors_exist()
         self._assert_same_firmware()
 
-    def _find_single_motor(self, motor: str, initial_baudrate: int | None = None) -> tuple[int, int]:
+    def _find_single_motor(
+        self, motor: str, initial_baudrate: int | None = None
+    ) -> tuple[int, int]:
         if self.protocol_version == 0:
             return self._find_single_motor_p0(motor, initial_baudrate)
         else:
             return self._find_single_motor_p1(motor, initial_baudrate)
 
-    def _find_single_motor_p0(self, motor: str, initial_baudrate: int | None = None) -> tuple[int, int]:
+    def _find_single_motor_p0(
+        self, motor: str, initial_baudrate: int | None = None
+    ) -> tuple[int, int]:
         model = self.motors[motor].model
         search_baudrates = (
-            [initial_baudrate] if initial_baudrate is not None else self.model_baudrate_table[model]
+            [initial_baudrate]
+            if initial_baudrate is not None
+            else self.model_baudrate_table[model]
         )
         expected_model_nb = self.model_number_table[model]
 
@@ -217,14 +238,19 @@ class FeetechMotorsBus(MotorsBus):
                     )
                 return baudrate, found_id
 
-        raise RuntimeError(f"Motor '{motor}' (model '{model}') was not found. Make sure it is connected.")
+        raise RuntimeError(
+            f"Motor '{motor}' (model '{model}') was not found. Make sure it is connected."
+        )
 
-    def _find_single_motor_p1(self, motor: str, initial_baudrate: int | None = None) -> tuple[int, int]:
-       
+    def _find_single_motor_p1(
+        self, motor: str, initial_baudrate: int | None = None
+    ) -> tuple[int, int]:
 
         model = self.motors[motor].model
         search_baudrates = (
-            [initial_baudrate] if initial_baudrate is not None else self.model_baudrate_table[model]
+            [initial_baudrate]
+            if initial_baudrate is not None
+            else self.model_baudrate_table[model]
         )
         expected_model_nb = self.model_number_table[model]
 
@@ -241,9 +267,13 @@ class FeetechMotorsBus(MotorsBus):
                         )
                     return baudrate, id_
 
-        raise RuntimeError(f"Motor '{motor}' (model '{model}') was not found. Make sure it is connected.")
+        raise RuntimeError(
+            f"Motor '{motor}' (model '{model}') was not found. Make sure it is connected."
+        )
 
-    def configure_motors(self, return_delay_time=0, maximum_acceleration=254, acceleration=254) -> None:
+    def configure_motors(
+        self, return_delay_time=0, maximum_acceleration=254, acceleration=254
+    ) -> None:
         for motor in self.motors:
             # By default, Feetech motors have a 500µs delay response time (corresponding to a value of 250 on
             # the 'Return_Delay_Time' address). We ensure this is reduced to the minimum of 2µs (value of 0).
@@ -287,7 +317,9 @@ class FeetechMotorsBus(MotorsBus):
             mins[motor] = self.read("Min_Position_Limit", motor, normalize=False)
             maxes[motor] = self.read("Max_Position_Limit", motor, normalize=False)
             offsets[motor] = (
-                self.read("Homing_Offset", motor, normalize=False) if self.protocol_version == 0 else 0
+                self.read("Homing_Offset", motor, normalize=False)
+                if self.protocol_version == 0
+                else 0
             )
 
         calibration = {}
@@ -302,7 +334,9 @@ class FeetechMotorsBus(MotorsBus):
 
         return calibration
 
-    def write_calibration(self, calibration_dict: dict[str, MotorCalibration], cache: bool = True) -> None:
+    def write_calibration(
+        self, calibration_dict: dict[str, MotorCalibration], cache: bool = True
+    ) -> None:
         for motor, calibration in calibration_dict.items():
             if self.protocol_version == 0:
                 self.write("Homing_Offset", motor, calibration.homing_offset)
@@ -312,7 +346,9 @@ class FeetechMotorsBus(MotorsBus):
         if cache:
             self.calibration = calibration_dict
 
-    def _get_half_turn_homings(self, positions: dict[NameOrID, Value]) -> dict[NameOrID, Value]:
+    def _get_half_turn_homings(
+        self, positions: dict[NameOrID, Value]
+    ) -> dict[NameOrID, Value]:
         """
         On Feetech Motors:
         Present_Position = Actual_Position - Homing_Offset
@@ -321,19 +357,19 @@ class FeetechMotorsBus(MotorsBus):
         for motor, pos in positions.items():
             model = self._get_motor_model(motor)
             max_res = self.model_resolution_table[model] - 1
-            
+
             # calculate target offset
             target_offset = pos - int(max_res / 2)
             print(f"target_offset: {target_offset}")
-            
+
             # get Homing_Offset bits from encoding table
             encoding_table = self.model_encoding_table.get(model, {})
             homing_offset_bits = encoding_table.get("Homing_Offset", 11)  # 默认11位
-            
+
             # calculate adjustment value: 2^(bits + 1)
             adjustment_value = 1 << (homing_offset_bits + 1)
             max_offset = (1 << homing_offset_bits) - 1  # 2^bits - 1
-            
+
             # ensure offset is in reasonable range
             # if out of range, adjust by adjustment_value
             while target_offset > max_offset:
@@ -341,28 +377,40 @@ class FeetechMotorsBus(MotorsBus):
             while target_offset < -max_offset:
                 target_offset += adjustment_value
             print(f"target_offset adjusted: {target_offset}")
-            
+
             half_turn_homings[motor] = target_offset
 
         return half_turn_homings
 
-    def disable_torque(self, motors: str | list[str] | None = None, num_retry: int = 0) -> None:
+    def disable_torque(
+        self, motors: str | list[str] | None = None, num_retry: int = 0
+    ) -> None:
         for motor in self._get_motors_list(motors):
-            self.write("Torque_Enable", motor, TorqueMode.DISABLED.value, num_retry=num_retry)
+            self.write(
+                "Torque_Enable", motor, TorqueMode.DISABLED.value, num_retry=num_retry
+            )
             self.write("Lock", motor, 0, num_retry=num_retry)
 
     def _disable_torque(self, motor_id: int, model: str, num_retry: int = 0) -> None:
         addr, length = get_address(self.model_ctrl_table, model, "Torque_Enable")
-        self._write(addr, length, motor_id, TorqueMode.DISABLED.value, num_retry=num_retry)
+        self._write(
+            addr, length, motor_id, TorqueMode.DISABLED.value, num_retry=num_retry
+        )
         addr, length = get_address(self.model_ctrl_table, model, "Lock")
         self._write(addr, length, motor_id, 0, num_retry=num_retry)
 
-    def enable_torque(self, motors: str | list[str] | None = None, num_retry: int = 0) -> None:
+    def enable_torque(
+        self, motors: str | list[str] | None = None, num_retry: int = 0
+    ) -> None:
         for motor in self._get_motors_list(motors):
-            self.write("Torque_Enable", motor, TorqueMode.ENABLED.value, num_retry=num_retry)
+            self.write(
+                "Torque_Enable", motor, TorqueMode.ENABLED.value, num_retry=num_retry
+            )
             self.write("Lock", motor, 1, num_retry=num_retry)
 
-    def _encode_sign(self, data_name: str, ids_values: dict[int, int]) -> dict[int, int]:
+    def _encode_sign(
+        self, data_name: str, ids_values: dict[int, int]
+    ) -> dict[int, int]:
         for id_ in ids_values:
             model = self._id_to_model(id_)
             encoding_table = self.model_encoding_table.get(model)
@@ -372,7 +420,9 @@ class FeetechMotorsBus(MotorsBus):
 
         return ids_values
 
-    def _decode_sign(self, data_name: str, ids_values: dict[int, int]) -> dict[int, int]:
+    def _decode_sign(
+        self, data_name: str, ids_values: dict[int, int]
+    ) -> dict[int, int]:
         for id_ in ids_values:
             model = self._id_to_model(id_)
             encoding_table = self.model_encoding_table.get(model)
@@ -386,7 +436,6 @@ class FeetechMotorsBus(MotorsBus):
         return _split_into_byte_chunks(value, length)
 
     def _broadcast_ping(self) -> tuple[dict[int, int], int]:
-        
 
         data_list = {}
 
@@ -409,7 +458,9 @@ class FeetechMotorsBus(MotorsBus):
             return data_list, result
 
         # set rx timeout
-        self.port_handler.setPacketTimeoutMillis((wait_length * tx_time_per_byte) + (3.0 * scs.MAX_ID) + 16.0)
+        self.port_handler.setPacketTimeoutMillis(
+            (wait_length * tx_time_per_byte) + (3.0 * scs.MAX_ID) + 16.0
+        )
 
         rxpacket = []
         while not self.port_handler.isPacketTimeout() and rx_length < wait_length:
@@ -456,7 +507,9 @@ class FeetechMotorsBus(MotorsBus):
                 del rxpacket[0:idx]
                 rx_length = rx_length - idx
 
-    def broadcast_ping(self, num_retry: int = 0, raise_on_error: bool = False) -> dict[int, int] | None:
+    def broadcast_ping(
+        self, num_retry: int = 0, raise_on_error: bool = False
+    ) -> dict[int, int] | None:
         self._assert_protocol_is_compatible("broadcast_ping")
         for n_try in range(1 + num_retry):
             ids_status, comm = self._broadcast_ping()
@@ -470,14 +523,23 @@ class FeetechMotorsBus(MotorsBus):
                 raise ConnectionError(self.packet_handler.getTxRxResult(comm))
             return
 
-        ids_errors = {id_: status for id_, status in ids_status.items() if self._is_error(status)}
+        ids_errors = {
+            id_: status for id_, status in ids_status.items() if self._is_error(status)
+        }
         if ids_errors:
-            display_dict = {id_: self.packet_handler.getRxPacketError(err) for id_, err in ids_errors.items()}
-            logger.error(f"Some motors found returned an error status:\n{pformat(display_dict, indent=4)}")
+            display_dict = {
+                id_: self.packet_handler.getRxPacketError(err)
+                for id_, err in ids_errors.items()
+            }
+            logger.error(
+                f"Some motors found returned an error status:\n{pformat(display_dict, indent=4)}"
+            )
 
         return self._read_model_number(list(ids_status), raise_on_error)
 
-    def _read_firmware_version(self, motor_ids: list[int], raise_on_error: bool = False) -> dict[int, str]:
+    def _read_firmware_version(
+        self, motor_ids: list[int], raise_on_error: bool = False
+    ) -> dict[int, str]:
         firmware_versions = {}
         for id_ in motor_ids:
             firm_ver_major, comm, error = self._read(
@@ -496,10 +558,14 @@ class FeetechMotorsBus(MotorsBus):
 
         return firmware_versions
 
-    def _read_model_number(self, motor_ids: list[int], raise_on_error: bool = False) -> dict[int, int]:
+    def _read_model_number(
+        self, motor_ids: list[int], raise_on_error: bool = False
+    ) -> dict[int, int]:
         model_numbers = {}
         for id_ in motor_ids:
-            model_nb, comm, error = self._read(*MODEL_NUMBER, id_, raise_on_error=raise_on_error)
+            model_nb, comm, error = self._read(
+                *MODEL_NUMBER, id_, raise_on_error=raise_on_error
+            )
             if not self._is_comm_success(comm) or self._is_error(error):
                 continue
 

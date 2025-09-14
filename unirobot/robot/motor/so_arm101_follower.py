@@ -5,11 +5,12 @@ from typing import Any
 from typing import Dict
 import os
 import time
+
 from pydantic import BaseModel
 
 from unirobot.robot.device_interface import BaseDevice
 from unirobot.robot.ros_lib.motors_bus import Motor, MotorCalibration, MotorNormMode
-from unirobot.robot.ros_lib.feetech import FeetechMotorsBus,OperatingMode
+from unirobot.robot.ros_lib.feetech import FeetechMotorsBus, OperatingMode
 from unirobot.robot.motor.so_arm101_calib import so_arm_101_follower_calib
 
 
@@ -17,18 +18,23 @@ logger = logging.getLogger(__name__)
 
 
 class CalibConfig(BaseModel):
+    """Calibration config."""
+
     motors: Dict[str, MotorCalibration]
 
+
 def ensure_safe_goal_position(
-    goal_present_pos: dict[str, tuple[float, float]], max_relative_target: float | dict[str,float]
+    goal_present_pos: dict[str, tuple[float, float]],
+    max_relative_target: float | dict[str, float],
 ) -> dict[str, float]:
     """Caps relative action target magnitude for safety."""
-
     if isinstance(max_relative_target, float):
         diff_cap = dict.fromkeys(goal_present_pos, max_relative_target)
     elif isinstance(max_relative_target, dict):
         if not set(goal_present_pos) == set(max_relative_target):
-            raise ValueError("max_relative_target keys must match those of goal_present_pos.")
+            raise ValueError(
+                "max_relative_target keys must match those of goal_present_pos."
+            )
         diff_cap = max_relative_target
     else:
         raise TypeError(max_relative_target)
@@ -50,11 +56,12 @@ def ensure_safe_goal_position(
 
     if warnings_dict:
         logging.warning(
-            "Relative goal position magnitude had to be clamped to be safe.\n"
-            f"{warnings_dict}"
+            "Relative goal position magnitude had to be clamped to be safe. %s\n",
+            warnings_dict,
         )
 
     return safe_goal_positions
+
 
 class SoArm101Follower(BaseDevice):
     """The abstract interface of Robot Device.
@@ -64,20 +71,25 @@ class SoArm101Follower(BaseDevice):
         port (str) : Device' Port, such as IP's port, UART prot.
     """
 
-    def __init__(self, host_name: str = "so_arm101_follower", 
-                 port: str = "1234",
-                 use_degrees: bool = False,
-                 max_relative_target: int = None,
-                 disable_torque_on_disconnect:bool=True):
+    def __init__(
+        self,
+        host_name: str = "so_arm101_follower",
+        port: str = "1234",
+        use_degrees: bool = False,
+        max_relative_target: int = None,
+        disable_torque_on_disconnect: bool = True,
+    ):
         """Init."""
-        super().__init__(host_name=host_name,port=port)
+        super().__init__(host_name=host_name, port=port)
         # self._host_name = host_name
         # self._port = port
         # os.chmod(self._port, 0o777)  # 设置权限为 rwxr-xr-x
-        self.use_degrees =use_degrees
+        self.use_degrees = use_degrees
         self.max_relative_target = max_relative_target
         self.disable_torque_on_disconnect = disable_torque_on_disconnect
-        norm_mode_body = MotorNormMode.DEGREES if self.use_degrees else MotorNormMode.RANGE_M100_100
+        norm_mode_body = (
+            MotorNormMode.DEGREES if self.use_degrees else MotorNormMode.RANGE_M100_100
+        )
         self.calibration = self.load_calibration()
         self.bus = FeetechMotorsBus(
             port=self._port,
@@ -91,11 +103,10 @@ class SoArm101Follower(BaseDevice):
             },
             calibration=self.calibration.motors,
         )
-        
+
     def load_calibration(self):
         """Load calibration."""
         return CalibConfig(motors=so_arm_101_follower_calib)
-
 
     def open(self, *args, **kwargs) -> None:
         """Open a device."""
@@ -105,7 +116,6 @@ class SoArm101Follower(BaseDevice):
         self.bus.connect()
         self.configure()
         logger.info(f"{self} connected.")
-
 
     def configure(self, *args, **kwargs) -> None:
         """Configure a device."""
@@ -137,14 +147,22 @@ class SoArm101Follower(BaseDevice):
         if not self.bus.is_connected:
             raise RuntimeError(f"{self} is not connected.")
 
-        goal_pos = {key.removesuffix(".pos"): val for key, val in action.items() if key.endswith(".pos")}
+        goal_pos = {
+            key.removesuffix(".pos"): val
+            for key, val in action.items()
+            if key.endswith(".pos")
+        }
 
         # Cap goal position when too far away from present position.
         # /!\ Slower fps expected due to reading from the follower.
         if self.max_relative_target is not None:
             present_pos = self.bus.sync_read("Present_Position")
-            goal_present_pos = {key: (g_pos, present_pos[key]) for key, g_pos in goal_pos.items()}
-            goal_pos = ensure_safe_goal_position(goal_present_pos, self.max_relative_target)
+            goal_present_pos = {
+                key: (g_pos, present_pos[key]) for key, g_pos in goal_pos.items()
+            }
+            goal_pos = ensure_safe_goal_position(
+                goal_present_pos, self.max_relative_target
+            )
 
         # Send goal position to the arm
         self.bus.sync_write("Goal_Position", goal_pos)

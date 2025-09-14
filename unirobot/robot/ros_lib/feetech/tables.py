@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2024 The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -97,7 +98,10 @@ STS_SMS_SERIES_CONTROL_TABLE = {
     "Hts": (83, 1),  # (ns) valid for firmware >= 2.54, other versions keep 0
     "Maximum_Velocity_Limit": (84, 1),
     "Maximum_Acceleration": (85, 1),
-    "Acceleration_Multiplier ": (86, 1),  # Acceleration multiplier in effect when acceleration is 0
+    "Acceleration_Multiplier ": (
+        86,
+        1,
+    ),  # Acceleration multiplier in effect when acceleration is 0
 }
 
 # http://doc.feetech.cn/#/prodinfodownload?srcType=FT-SCSCL-emanual-cbcc8ab2e3384282a01d4bf3

@@ -4,17 +4,23 @@ import logging
 from typing import Dict
 import os
 import time
+
 from pydantic import BaseModel
 
 from unirobot.robot.device_interface import BaseDevice
 from unirobot.robot.ros_lib.motors_bus import Motor, MotorCalibration, MotorNormMode
-from unirobot.robot.ros_lib.feetech import FeetechMotorsBus,OperatingMode
+from unirobot.robot.ros_lib.feetech import FeetechMotorsBus, OperatingMode
 from unirobot.robot.teleoperator.so_arm101_calib import so_arm_101_leader_calib
+
 
 logger = logging.getLogger(__name__)
 
+
 class CalibConfig(BaseModel):
+    """Calibration config."""
+
     motors: Dict[str, MotorCalibration]
+
 
 class SoArm101Leader(BaseDevice):
     """The abstract interface of Robot Device.
@@ -24,14 +30,21 @@ class SoArm101Leader(BaseDevice):
         port (str) : Device' Port, such as IP's port, UART prot.
     """
 
-    def __init__(self, host_name: str = "so_arm101_follower", port: str = "1234",use_degrees: bool = False):
+    def __init__(
+        self,
+        host_name: str = "so_arm101_follower",
+        port: str = "1234",
+        use_degrees: bool = False,
+    ):
         """Init."""
         # self._host_name = host_name
         # self._port = port
-        super().__init__(host_name=host_name,port=port)
+        super().__init__(host_name=host_name, port=port)
         # os.chmod(self._port, 0o777)  # 设置权限为 rwxr-xr-x
         self.use_degrees = use_degrees
-        norm_mode_body = MotorNormMode.DEGREES if self.use_degrees else MotorNormMode.RANGE_M100_100
+        norm_mode_body = (
+            MotorNormMode.DEGREES if self.use_degrees else MotorNormMode.RANGE_M100_100
+        )
         self.calibration = self.load_calibration()
         self.bus = FeetechMotorsBus(
             port=self._port,

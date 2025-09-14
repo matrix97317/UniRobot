@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """OpenCV Camera Sensor."""
 import logging
-import cv2
 import math
 import time
-import numpy as np
 from threading import Event, Lock, Thread
 
+import cv2
+import numpy as np
+
 from unirobot.robot.device_interface import BaseDevice
+
 
 logger = logging.getLogger(__name__)
 
@@ -19,31 +21,39 @@ class OpenCVCamera(BaseDevice):
         host_name (str): Device's ID, such as IP.
         port (str) : Device' Port, such as IP's port, UART prot.
     """
-    ROTATE = ["0","90","90c","180"]
-    COLOR_MODE = ['BGR',"RGB"]
+
+    ROTATE = ["0", "90", "90c", "180"]
+    COLOR_MODE = ["BGR", "RGB"]
     CV2_ROTATE = {
         "0": None,
-        "90":cv2.ROTATE_90_CLOCKWISE,
-        "90c":cv2.ROTATE_90_COUNTERCLOCKWISE,
-        "180":cv2.ROTATE_180,
+        "90": cv2.ROTATE_90_CLOCKWISE,
+        "90c": cv2.ROTATE_90_COUNTERCLOCKWISE,
+        "180": cv2.ROTATE_180,
     }
-    def __init__(self, host_name: str = "localhost", 
-                 port: str = "1234",
-                 fps:int=25,
-                 width:int=640,
-                 height=480,
-                 color_mode='BGR',
-                 warmup:bool=True,
-                 rotate:str='0'):
+
+    def __init__(
+        self,
+        host_name: str = "localhost",
+        port: str = "1234",
+        fps: int = 25,
+        width: int = 640,
+        height=480,
+        color_mode="BGR",
+        warmup: bool = True,
+        rotate: str = "0",
+    ):
         """Init."""
         # self._host_name = host_name
         # self._port = port
-        super().__init__(host_name=host_name,port=port)
+        super().__init__(host_name=host_name, port=port)
         if rotate not in self.ROTATE:
-            raise ValueError(f"Current rotate degree {rotate} not be supported. {self.ROTATE}")
+            raise ValueError(
+                f"Current rotate degree {rotate} not be supported. {self.ROTATE}"
+            )
         if color_mode not in self.COLOR_MODE:
-            raise ValueError(f"Current color mode {color_mode} not be supported. {self.COLOR_MODE}")
-        
+            raise ValueError(
+                f"Current color mode {color_mode} not be supported. {self.COLOR_MODE}"
+            )
 
         self.fps = fps
         self.width = width
@@ -54,7 +64,7 @@ class OpenCVCamera(BaseDevice):
         self.is_connected = False
 
         self.videocapture = None
-        self.fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+        self.fourcc = cv2.VideoWriter_fourcc("M", "J", "P", "G")
 
         self.thread = None
         self.stop_event = None
@@ -64,11 +74,12 @@ class OpenCVCamera(BaseDevice):
 
         if self.height and self.width:
             self.capture_width, self.capture_height = self.width, self.height
-            if rotate in ['90']:
+            if rotate in ["90"]:
                 self.capture_width, self.capture_height = self.height, self.width
         self.rotation = self.CV2_ROTATE[rotate]
 
     def __str__(self) -> str:
+        """Get device string."""
         return f"{self._host_name}({self._port})"
 
     def open(self, *args, **kwargs) -> None:
@@ -100,7 +111,9 @@ class OpenCVCamera(BaseDevice):
     def configure(self, *args, **kwargs) -> None:
         """Configure a device."""
         if not self.is_connected:
-            raise RuntimeError(f"Cannot configure settings for {self} as it is not connected.")
+            raise RuntimeError(
+                f"Cannot configure settings for {self} as it is not connected."
+            )
 
         default_width = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
         default_height = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
@@ -108,12 +121,19 @@ class OpenCVCamera(BaseDevice):
         if self.width is None or self.height is None:
             self.width, self.height = default_width, default_height
             self.capture_width, self.capture_height = default_width, default_height
-            if self.rotation in [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_90_COUNTERCLOCKWISE]:
+            if self.rotation in [
+                cv2.ROTATE_90_CLOCKWISE,
+                cv2.ROTATE_90_COUNTERCLOCKWISE,
+            ]:
                 self.width, self.height = default_height, default_width
                 self.capture_width, self.capture_height = default_width, default_height
         else:
-            width_success = self.videocapture.set(cv2.CAP_PROP_FRAME_WIDTH, float(self.capture_width))
-            height_success = self.videocapture.set(cv2.CAP_PROP_FRAME_HEIGHT, float(self.capture_height))
+            width_success = self.videocapture.set(
+                cv2.CAP_PROP_FRAME_WIDTH, float(self.capture_width)
+            )
+            height_success = self.videocapture.set(
+                cv2.CAP_PROP_FRAME_HEIGHT, float(self.capture_height)
+            )
 
             actual_width = int(round(self.videocapture.get(cv2.CAP_PROP_FRAME_WIDTH)))
             if not width_success or self.capture_width != actual_width:
@@ -130,8 +150,10 @@ class OpenCVCamera(BaseDevice):
         fourcc_succ = self.videocapture.set(cv2.CAP_PROP_FOURCC, self.fourcc)
         actual_fourcc = self.videocapture.get(cv2.CAP_PROP_FOURCC)
         if not fourcc_succ or actual_fourcc != self.fourcc:
-            raise RuntimeError(f"{self} failed to set fourcc={self.fourcc} ({actual_fourcc=}, {fourcc_succ=}).")
-        
+            raise RuntimeError(
+                f"{self} failed to set fourcc={self.fourcc} ({actual_fourcc=}, {fourcc_succ=})."
+            )
+
         if self.fps is None:
             self.fps = self.videocapture.get(cv2.CAP_PROP_FPS)
         else:
@@ -139,11 +161,13 @@ class OpenCVCamera(BaseDevice):
             actual_fps = self.videocapture.get(cv2.CAP_PROP_FPS)
             # Use math.isclose for robust float comparison
             if not success or not math.isclose(self.fps, actual_fps, rel_tol=1e-3):
-                raise RuntimeError(f"{self} failed to set fps={self.fps} ({actual_fps=}).")
+                raise RuntimeError(
+                    f"{self} failed to set fps={self.fps} ({actual_fps=})."
+                )
 
-    def _post_process(self,img:np.ndarray)->np.ndarray:
+    def _post_process(self, img: np.ndarray) -> np.ndarray:
         """Post process video frame."""
-        requested_color_mode = self.color_mode 
+        requested_color_mode = self.color_mode
 
         if requested_color_mode not in self.COLOR_MODE:
             raise ValueError(
@@ -158,17 +182,23 @@ class OpenCVCamera(BaseDevice):
             )
 
         if c != 3:
-            raise RuntimeError(f"{self} frame channels={c} do not match expected 3 channels (RGB/BGR).")
+            raise RuntimeError(
+                f"{self} frame channels={c} do not match expected 3 channels (RGB/BGR)."
+            )
 
         processed_image = img
-        if requested_color_mode == 'RGB':
+        if requested_color_mode == "RGB":
             processed_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        if self.rotation in [cv2.ROTATE_90_CLOCKWISE, cv2.ROTATE_90_COUNTERCLOCKWISE, cv2.ROTATE_180]:
+        if self.rotation in [
+            cv2.ROTATE_90_CLOCKWISE,
+            cv2.ROTATE_90_COUNTERCLOCKWISE,
+            cv2.ROTATE_180,
+        ]:
             processed_image = cv2.rotate(processed_image, self.rotation)
 
         return processed_image
-    
+
     def get(self, *args, **kwargs) -> None:
         """Get info from device."""
         if not self.is_connected:
@@ -187,7 +217,7 @@ class OpenCVCamera(BaseDevice):
         logger.debug(f"{self} read took: {read_duration_ms:.1f}ms")
 
         return processed_frame
-    
+
     def _get_loop(self):
         """
         Internal loop run by the background thread for asynchronous reading.
@@ -210,7 +240,9 @@ class OpenCVCamera(BaseDevice):
             except RuntimeError:
                 break
             except Exception as e:
-                logger.warning(f"Error reading frame in background thread for {self}: {e}")
+                logger.warning(
+                    f"Error reading frame in background thread for {self}: {e}"
+                )
 
     def _start_get_thread(self) -> None:
         """Starts or restarts the background read thread if it's not running."""
@@ -274,11 +306,11 @@ class OpenCVCamera(BaseDevice):
             self.new_frame_event.clear()
 
         if frame is None:
-            raise RuntimeError(f"Internal error: Event set but no frame available for {self}.")
+            raise RuntimeError(
+                f"Internal error: Event set but no frame available for {self}."
+            )
 
         return frame
-
-
 
     def put(self, *args, **kwargs) -> None:
         """Put info to device."""

@@ -6,8 +6,8 @@ import torch
 # ============Robot Config================
 robot = dict(
     type="So101",
-    mode = "teleopreation",
-    fps = 25,
+    mode="teleopreation",
+    fps=25,
     sensor_cfg=dict(
         top=dict(
             type="OpenCVCamera",
@@ -16,9 +16,9 @@ robot = dict(
             fps=30,
             width=640,
             height=480,
-            color_mode='BGR',
+            color_mode="BGR",
             warmup=True,
-            rotate='0'
+            rotate="0",
         ),
         hand=dict(
             type="OpenCVCamera",
@@ -27,30 +27,27 @@ robot = dict(
             fps=30,
             width=640,
             height=480,
-            color_mode='BGR',
+            color_mode="BGR",
             warmup=True,
-            rotate='180'
+            rotate="180",
         ),
     ),
     motor_cfg=dict(
         type="SoArm101Follower",
-        host_name="so_arm101_follower", 
-        port= "/dev/ttyACM1",
-        use_degrees= False,
-        max_relative_target = None,
-        disable_torque_on_disconnect =True
+        host_name="so_arm101_follower",
+        port="/dev/ttyACM1",
+        use_degrees=False,
+        max_relative_target=None,
+        disable_torque_on_disconnect=True,
     ),
     teleoperator_cfg=dict(
         type="SoArm101Leader",
-        host_name="so_arm101_leader", 
+        host_name="so_arm101_leader",
         port="/dev/ttyACM0",
-        use_degrees= False
+        use_degrees=False,
     ),
     model_cfg=None,
 )
-
-
-
 
 
 # deterministic seed
