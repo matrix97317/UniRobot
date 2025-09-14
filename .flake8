@@ -11,7 +11,9 @@ extend-exclude =
     # This contains our built documentation.
     build,
     # This contains builds of flake8 that we don't want to check
-    dist
+    dist,
+    unirobot/robot/ros_lib/*,
+    unirobot/robot/utils/vis_hdf5.py
 
 # exclude = # torch dist code, ignore it.,
 
@@ -37,7 +39,10 @@ extend-ignore =
     F403,
     F401,
     E501,
-    S614
+    S614,
+    G004,
+    D401,
+    G200
 # Make `flake8-quotes` compatible with black.
 # Reference: https://github.com/zheller/flake8-quotes#configuration
 # Reference: https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#strings

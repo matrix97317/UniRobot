@@ -44,5 +44,17 @@
   ],
   "console_scripts": [
     "unirobot=unirobot.cli:cli"
+  ],
+  "robot.motor": [
+    "SoArm101Follower=unirobot.robot.motor.so_arm101_follower"
+  ],
+  "robot.real_robot": [
+    "So101=unirobot.robot.robot_so101"
+  ],
+  "robot.sensor": [
+    "OpenCVCamera=unirobot.robot.sensor.opencv_camera"
+  ],
+  "robot.teleoperator": [
+    "SoArm101Leader=unirobot.robot.teleoperator.so_arm101_leader"
   ]
 }

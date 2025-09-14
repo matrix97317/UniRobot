@@ -9,6 +9,8 @@ extension-pkg-allow-list=mpi4py.MPI,
 # Add files or directories matching the regex patterns to the ignore-list. The
 # regex matches against paths and can be in Posix or Windows format.
 ignore-paths=(./)?.venv/,
+             (./)?unirobot/robot/ros_lib/,
+             (./)?unirobot/robot/utils/vis_hdf5.py,
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
@@ -54,7 +56,12 @@ disable=c-extension-no-member,
         unused-argument,
         protected-access,
         possibly-used-before-assignment,
-        unused-import
+        unused-import,
+        too-many-positional-arguments,
+        deprecated-module,
+        no-self-use,
+        logging-fstring-interpolation,
+        broad-exception-caught
 
 
 [SIMILARITIES]

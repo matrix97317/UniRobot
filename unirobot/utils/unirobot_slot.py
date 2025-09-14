@@ -34,7 +34,7 @@ EVALUATOR = Slot("brain.evaluator")
 MODEL_FLOW = Slot("brain.model_flow")
 
 # UniRobot Robot Slot
-ROBOT = Slot("robot.robot")
+ROBOT = Slot("robot.real_robot")
 TELEOPERATOR = Slot("robot.teleoperator")
 SENSOR = Slot("robot.sensor")
 MOTOR = Slot("robot.motor")

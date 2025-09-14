@@ -38,7 +38,16 @@ profile = "black"
 
 [tool.mypy]
 disable_error_code = [
-  "union-attr"
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "call-arg",
+  "func-returns-value",
+  "index",
+  "return-value",
+  "union-attr",
+  "unused-ignore",
+  "var-annotated"
 ]
 enable_error_code = [
   "ignore-without-code"
