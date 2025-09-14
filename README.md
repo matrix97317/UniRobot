@@ -17,6 +17,10 @@ UniRobot 是一个由机器人大脑(数据，模型，模型训练)和机器人
 
 ![TOP-Design](./asset/img/uni-robot.png "UniRobot Top Desgin")
 
+### Demo Show
+
+这里你可以快速了解UniRobot的主要功能展示 [demo_show](./md_doc/demo_show.md)
+
 
 ### Developer Quick Start
 

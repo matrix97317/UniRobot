@@ -54,7 +54,9 @@ disable=c-extension-no-member,
         unused-argument,
         protected-access,
         possibly-used-before-assignment,
-        unused-import
+        unused-import,
+        too-many-positional-arguments,
+        deprecated-module
 
 
 [SIMILARITIES]

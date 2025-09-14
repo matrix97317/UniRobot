@@ -1,18 +1,7 @@
 # -*- coding: utf-8 -*-
 """Run for Robot DDP Launcher."""
-
-import datetime
 import logging
-import random
 import sys
-import time
-from typing import Any
-from typing import Callable
-from typing import Dict
-from typing import List
-from typing import Union
-
-import torch
 
 from unirobot.utils.cfg_parser import PyConfig
 from unirobot.utils.exceptions import exception_hook
@@ -44,5 +33,9 @@ def run(
     log_file_init("unirobot", global_rank)
     load_robot_slot()
     # parser cfg
-    # config_cfg = PyConfig.fromfile(config)
-    # print("=====Demo====")
+    config_cfg = PyConfig.fromfile(config)
+    config_cfg.robot["mode"] = run_type
+    config_cfg.robot["use_rl"] = use_rl
+    config_cfg.robot["task_name"] = task_name
+    robot = ROBOT.build(config_cfg.robot)
+    robot.run()

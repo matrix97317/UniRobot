@@ -20,5 +20,10 @@ torch
 torch_tb_profiler
 torchvision
 tqdm
-tvm
-triton
+#tvm
+#triton
+# so-arm101 motor driver
+feetech-servo-sdk>=1.0.0
+deepdiff
+pandas==2.3.2
+h5py
