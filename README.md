@@ -21,6 +21,9 @@ UniRobot 是一个由机器人大脑(数据，模型，模型训练)和机器人
 
 这里你可以快速了解UniRobot的主要功能展示 [demo_show](./md_doc/demo_show.md)
 
+### Supported Model & Robots
+
+这里你可以快速了解UniRobot当前支持的模型和机器人 [supported](./md_doc/supported_model_robots.md)
 
 ### Developer Quick Start
 
