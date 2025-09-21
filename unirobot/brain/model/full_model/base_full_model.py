@@ -42,6 +42,7 @@ class BaseFullModel(torch.nn.Module, ABC):
         if sub_module_cfg is None:
             raise ValueError("sub_module_cfg value is None.")
         self._train_mode = train_mode
+        self._batch_data = None
 
     def set_mode(
         self,
@@ -57,6 +58,22 @@ class BaseFullModel(torch.nn.Module, ABC):
     def init_weight(self) -> None:
         """Init model components weight."""
         raise NotImplementedError()
+
+    def set_batch_data(self, batch_data):
+        """Set batch data."""
+        self._batch_data = batch_data
+
+    def get_batch_data(self):
+        """Return batch data."""
+        return self._batch_data
+
+    def parse_inputs_data(self, inputs_data):  # pylint: disable=no-self-use
+        """Parse inputs data."""
+        return inputs_data
+
+    def wrap_outputs_data(self, outputs_data):  # pylint: disable=no-self-use
+        """Wrap outputs data."""
+        return outputs_data
 
     def forward(
         self,
