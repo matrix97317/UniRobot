@@ -2,11 +2,13 @@
 """Provide all resnet model."""
 
 import logging
+import math
 from typing import Callable
 from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import Any
 
 import torch
 from torch import nn
@@ -311,7 +313,7 @@ class ResNet(nn.Module):
             self.layer1 = self._make_layer(block, 64, layers[0])
 
             # if self.pipeline_parallel_rank == 1:
-            self.in_channels = 256
+            # self.in_channels = 256
             self.layer2 = self._make_layer(
                 block,
                 128,
@@ -321,7 +323,7 @@ class ResNet(nn.Module):
             )
 
             # if self.pipeline_parallel_rank == 2:
-            self.in_channels = 512
+            # self.in_channels = 512
             self.layer3 = self._make_layer(
                 block,
                 256,
@@ -330,7 +332,7 @@ class ResNet(nn.Module):
                 dilate=replace_stride_with_dilation[1],
             )
             # if self.pipeline_parallel_rank == 3:
-            self.in_channels = 1024
+            # self.in_channels = 1024
             self.layer4 = self._make_layer(
                 block,
                 512,
@@ -480,6 +482,146 @@ class ResNet(nn.Module):
         return self._forward_impl(inputs)
 
 
+class PositionEmbeddingSine(nn.Module):
+    """PositionEmbeddingSine.
+
+    This is a more standard version of the position embedding, very similar to the one
+    used by the Attention is all you need paper, generalized to work on images.
+    """
+
+    def __init__(
+        self, num_pos_feats=64, pe_temperature=10000, pe_normalize=False, pe_scale=None
+    ):
+        """Init."""
+        super().__init__()
+        self.num_pos_feats = num_pos_feats
+        self.temperature = pe_temperature
+        self.normalize = pe_normalize
+        if pe_scale is not None and pe_normalize is False:
+            raise ValueError("normalize should be True if scale is passed")
+        if pe_scale is None:
+            pe_scale = 2 * math.pi
+        self.scale = pe_scale
+
+    def forward(self, tensor):
+        """Forward."""
+        x = tensor
+        # mask = tensor_list.mask
+        # assert mask is not None
+        # not_mask = ~mask
+
+        not_mask = torch.ones_like(x[0, [0]])
+        y_embed = not_mask.cumsum(1, dtype=torch.float32)
+        x_embed = not_mask.cumsum(2, dtype=torch.float32)
+        if self.normalize:
+            eps = 1e-6
+            y_embed = y_embed / (y_embed[:, -1:, :] + eps) * self.scale
+            x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
+
+        dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32, device=x.device)
+        dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
+
+        pos_x = x_embed[:, :, :, None] / dim_t
+        pos_y = y_embed[:, :, :, None] / dim_t
+        pos_x = torch.stack(
+            (pos_x[:, :, :, 0::2].sin(), pos_x[:, :, :, 1::2].cos()), dim=4
+        ).flatten(3)
+        pos_y = torch.stack(
+            (pos_y[:, :, :, 0::2].sin(), pos_y[:, :, :, 1::2].cos()), dim=4
+        ).flatten(3)
+        pos = torch.cat((pos_y, pos_x), dim=3).permute(0, 3, 1, 2)
+        return pos
+
+
+class ResNetFeature(ResNet):
+    """ReNetFeature."""
+
+    def __init__(
+        self,
+        use_all_features: bool = False,
+        use_pos_encode: bool = False,
+        num_pos_feats=64,
+        pe_temperature=10000,
+        pe_normalize=False,
+        pe_scale=None,
+        **kwargs,
+    ):
+        """Init."""
+        super().__init__(**kwargs)
+        self.use_all_features = use_all_features
+        self.use_pos_encode = use_pos_encode
+        self._pos_encoder = PositionEmbeddingSine(
+            num_pos_feats, pe_temperature, pe_normalize, pe_scale
+        )
+
+    def _forward_impl(
+        self,
+        inputs: List[torch.Tensor],
+    ) -> Any:
+        """Forward.
+
+        Args:
+            inputs (torch.Tensor): Forward inputs.
+
+        Returns:
+            Forward results (torch.Tensor).
+        """
+        # See note [TorchScript super()]
+
+        features = []
+        pos_features = []
+        out = self.conv1(inputs)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.maxpool(out)
+
+        out = self.layer1(out)
+        if self.use_all_features:
+            features.append(out)
+            if self.use_pos_encode:
+                pos_features.append(self._pos_encoder(out))
+        # out = self.layer2(out)
+        # if self.pipeline_parallel_rank == 1:
+        out = self.layer2(out)
+        if self.use_all_features:
+            features.append(out)
+            if self.use_pos_encode:
+                pos_features.append(self._pos_encoder(out))
+
+        # out = self.layer3(out)
+
+        # if self.pipeline_parallel_rank == 2:
+        out = self.layer3(out)
+        if self.use_all_features:
+            features.append(out)
+            if self.use_pos_encode:
+                pos_features.append(self._pos_encoder(out))
+
+        # out = self.layer4(out)
+        # out = self.avgpool(out)
+        # out = torch.flatten(out, 1)
+        # out = self.full_catenate(out)
+
+        # if self.pipeline_parallel_rank == 3:
+        out = self.layer4(out)
+        if self.use_all_features:
+            features.append(out)
+            if self.use_pos_encode:
+                pos_features.append(self._pos_encoder(out))
+        return features, pos_features
+
+    def forward(self, inputs: List[torch.Tensor]) -> List[torch.Tensor]:
+        """Forward.
+
+        Args:
+            inputs (torch.Tensor): Forward inputs.
+
+        Returns:
+            Forward results (torch.Tensor).
+        """
+        return self._forward_impl(inputs)
+
+
 class ResNet18(torch.nn.Module):
     """ResNet18.
 
@@ -492,18 +634,47 @@ class ResNet18(torch.nn.Module):
         self,
         train_mode: bool = True,
         pretrain_model: Optional[str] = None,
+        num_channels: int = 512,
+        use_all_features: bool = False,
+        use_pos_encode: bool = False,
+        num_pos_feats=64,
+        pe_temperature=10000,
+        pe_normalize=False,
+        pe_scale=None,
         **kwargs,
     ) -> None:
         """Initialize Resnet18."""
         super().__init__()
+        self.num_channels = num_channels
         self._pretrain_model = pretrain_model or None
-        self.base_model = ResNet(BasicBlock, [2, 2, 2, 2], **kwargs)
+        self.base_model = ResNetFeature(
+            use_all_features=use_all_features,
+            use_pos_encode=use_pos_encode,
+            num_pos_feats=num_pos_feats,
+            pe_temperature=pe_temperature,
+            pe_normalize=pe_normalize,
+            pe_scale=pe_scale,
+            block=BasicBlock,
+            layers=[2, 2, 2, 2],
+            **kwargs,
+        )
 
     def init_weight(self) -> None:
         """Initialize resnet18 weight."""
         if self._pretrain_model is not None:
             # place holder: load checkpoint.
-            pass
+            state_dict = torch.load(self._pretrain_model)
+            self.base_model.load_state_dict(state_dict, strict=False)
+
+    def freeze_bn_layers(self):
+        """Lock BN params."""
+        for name, module in self.base_model.named_modules():
+            if isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d, nn.BatchNorm3d)):
+                for param in module.parameters():
+                    param.requires_grad = False
+                # 设置为评估模式
+                module.eval()
+                logger.info(" %s Froze BN layer: %s", self.__name__, name)
 
     def infer_forward(self, inputs: torch.Tensor) -> torch.Tensor:
         """Infer base model forward.

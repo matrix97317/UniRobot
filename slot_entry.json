@@ -3,20 +3,26 @@
     "URDataLoader=unirobot.brain.data.dataloader.base_dataloader"
   ],
   "brain.dataset": [
-    "ImageNetDataset=unirobot.brain.data.dataset.imagenet"
+    "ImageNetDataset=unirobot.brain.data.dataset.imagenet",
+    "ACTDataset=unirobot.brain.data.dataset.act_dataset"
   ],
   "brain.decoder": [],
   "brain.encoder": [
-    "ParallelResNet50V3=unirobot.brain.model.encoder.parallel_resnet_v3"
+    "ParallelResNet50V3=unirobot.brain.model.encoder.parallel_resnet_v3",
+    "ResNet18=unirobot.brain.model.encoder.parallel_resnet_v3",
+    "Transformer=unirobot.brain.model.encoder.transformer",
+    "BlockEncoder=unirobot.brain.model.encoder.transformer"
   ],
   "brain.full_model": [
-    "ParallelRes50V3=unirobot.brain.model.full_model.resnet50_parallel_model"
+    "ParallelRes50V3=unirobot.brain.model.full_model.resnet50_parallel_model",
+    "ACTModel=unirobot.brain.model.full_model.act_full_model"
   ],
   "brain.layer": [],
   "brain.loss": [
     "ComposeWeightedLoss=unirobot.brain.model.loss.compose_weighted_loss",
     "CrossEntropyLoss=unirobot.brain.model.loss.cross_entropy_loss",
-    "LabelSmoothLoss=unirobot.brain.model.loss.smooth_loss"
+    "LabelSmoothLoss=unirobot.brain.model.loss.smooth_loss",
+    "ACTKLLoss=unirobot.brain.model.loss.act_kl_loss"
   ],
   "brain.lr_scheduler": [
     "CosineLrScheduler=unirobot.brain.model.optimizer.base_lr_scheduler",
