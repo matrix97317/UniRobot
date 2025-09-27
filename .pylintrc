@@ -68,7 +68,8 @@ disable=c-extension-no-member,
         too-many-instance-attributes,
         too-many-locals,
         unsubscriptable-object,
-        unknown-option-value
+        unknown-option-value,
+        too-many-statements
 
 
 
