@@ -34,6 +34,7 @@ class ModelFlow(torch.nn.Module):
         postprocess_cfg: Optional[Dict[str, Any]] = None,
         train_mode: bool = True,
         enable_pbn: bool = False,
+        unfold_inputs: bool = False,
         **kwargs,
     ) -> None:
         """Initialize the basic components of full model."""
@@ -63,6 +64,7 @@ class ModelFlow(torch.nn.Module):
         self._full_model.set_mode(train_mode)
         self._train_mode = train_mode
         self._enable_pbn = enable_pbn
+        self._unfold_inputs = unfold_inputs
 
     def trace_model_inputs_hook(self, model_inputs: Any) -> Any:
         """Convert DataLoader's Data as the inputs of trace model."""
@@ -103,7 +105,11 @@ class ModelFlow(torch.nn.Module):
                 infer_outputs = self._postprocess_layer(infer_outputs)
             return infer_outputs
 
-        train_outputs = self._full_model(inputs)
+        if self._unfold_inputs:
+            train_outputs = self._full_model(**inputs)
+        else:
+            train_outputs = self._full_model(inputs)
+
         if self._postprocess_layer:
             train_outputs = self._postprocess_layer(train_outputs)
         loss_dict = self.compute_loss(train_outputs, inputs)

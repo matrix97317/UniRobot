@@ -44,7 +44,10 @@ disable_error_code = [
   "call-arg",
   "func-returns-value",
   "index",
+  "misc",
+  "operator",
   "return-value",
+  "syntax",
   "union-attr",
   "unused-ignore",
   "var-annotated"

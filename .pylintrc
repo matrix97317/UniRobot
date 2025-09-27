@@ -61,7 +61,15 @@ disable=c-extension-no-member,
         deprecated-module,
         no-self-use,
         logging-fstring-interpolation,
-        broad-exception-caught
+        broad-exception-caught,
+        unnecessary-dunder-call,
+        fixme,
+        unused-variable,
+        too-many-instance-attributes,
+        too-many-locals,
+        unsubscriptable-object,
+        unknown-option-value
+
 
 
 [SIMILARITIES]

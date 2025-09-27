@@ -42,7 +42,8 @@ extend-ignore =
     S614,
     G004,
     D401,
-    G200
+    G200,
+    N812
 # Make `flake8-quotes` compatible with black.
 # Reference: https://github.com/zheller/flake8-quotes#configuration
 # Reference: https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#strings

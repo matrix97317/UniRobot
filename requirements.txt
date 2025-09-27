@@ -25,5 +25,5 @@ tqdm
 # so-arm101 motor driver
 feetech-servo-sdk>=1.0.0
 deepdiff
-pandas==2.3.2
+pandas==2.3.2; platform_machine == "arm64" or platform_machine == "aarch64"
 h5py

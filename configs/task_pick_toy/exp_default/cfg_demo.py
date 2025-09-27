@@ -49,10 +49,11 @@ robot = dict(
     model_cfg=None,
 )
 
+# ============Brain Config================
 
 # deterministic seed
 seed = 666
-BATCH_SIZE = 20
+BATCH_SIZE = 2
 # define trainer params
 trainer = dict(
     type="ParallelTrainer",
@@ -111,39 +112,77 @@ p2p_com = dict(
 
 
 # define model params
+HIDDEN_DIM = 512
 model_flow = dict(
     type="ModelFlow",
     full_model_cfg=dict(
-        type="ParallelRes50V3",
+        type="ACTModel",
+        camera_names=["top"],
+        state_dim=14,
+        chunk_size=100,
         sub_module_cfg=dict(
-            type="ParallelResNet50V3",
-            train_mode=True,
-            use_sync_bn=False,
+            backbone=dict(
+                type="ResNet18",
+                pretrain_model="/root/workspace/act/resnet18-f37072fd.pth",
+                num_channels=HIDDEN_DIM,
+                use_all_features=True,
+                use_pos_encode=True,
+                num_pos_feats=HIDDEN_DIM / 2,
+                pe_temperature=10000,
+                pe_normalize=True,
+                pe_scale=None,
+            ),
+            transformer=dict(
+                type="Transformer",
+                d_model=HIDDEN_DIM,
+                dropout=0.1,
+                nhead=8,
+                dim_feedforward=3200,
+                num_encoder_layers=4,
+                num_decoder_layers=7,
+                normalize_before=False,
+                return_intermediate_dec=True,
+            ),
+            encoder=dict(
+                type="BlockEncoder",
+                d_model=HIDDEN_DIM,
+                dropout=0.1,
+                nheads=8,
+                dim_feedforward=2048,
+                enc_layers=4,
+                pre_norm=False,
+            ),
         ),
-        batch_size=BATCH_SIZE,
     ),
     loss_func_cfg=dict(
-        type="LabelSmoothLoss",
-        smooth_value=0.1,
+        type="ACTKLLoss",
+        kl_weight=10,
     ),
     train_mode=True,
+    unfold_inputs=True,
 )
 
 # define optimizer params
 dataloader = dict(
     type="URDataLoader",
     dataset_cfg=dict(
-        type="ImageNetDataset",
+        type="ACTDataset",
         mode="train",
+        meta_file={
+            "so_arm101": {
+                "pick_toy": {
+                    "num_episodes": 10,
+                    "episode_format": "episode_{:d}.hdf5",
+                    "train": "/root/workspace/act/datasets/",
+                    "val": "/root/workspace/act/datasets/",
+                    "norm_stats": "/root/workspace/act/datasets/norm_stats.pkl",
+                }
+            }
+        },
+        task_name="pick_toy",
+        robot_name="so_arm101",
+        camera_names=["top"],
         transforms=[
-            dict(
-                type="MultiScaleCrop",
-                output_size=224,
-                scales=[1, 0.875, 0.75, 0.66],
-            ),
-            dict(
-                type="RandomHorizontalFlip",
-            ),
             dict(
                 type="ToTorchTensor",
             ),
@@ -153,7 +192,6 @@ dataloader = dict(
                 std=[0.229, 0.224, 0.225],
             ),
         ],
-        meta_file_key="imagenet",
     ),
     sampler_cfg=dict(
         type="URDistributedSampler",
@@ -181,55 +219,3 @@ ckpt = dict(
 
 
 # ======================== infer =======================
-
-infer_dataloader = dict(
-    type="URDataLoader",
-    dataset_cfg=dict(
-        type="ImageNetDataset",
-        mode="val",
-        transforms=[
-            dict(
-                type="Scale",
-                scale_size=256,
-            ),
-            dict(
-                type="CenterCrop",
-                output_size=224,
-            ),
-            dict(
-                type="ToTorchTensor",
-            ),
-            dict(
-                type="Normalize",
-                mean=[0.485, 0.456, 0.406],
-                std=[0.229, 0.224, 0.225],
-            ),
-        ],
-        meta_file_key="imagenet",
-    ),
-    sampler_cfg=dict(
-        type="URDistributedSampler",
-        shuffle=False,
-        seed=seed,
-        drop_last=False,
-        indices=None,
-    ),
-    batch_size=BATCH_SIZE,
-    seed=seed,
-    num_workers=8,
-    pin_memory=True,
-    prefetch_factor=2,
-    to_cuda=True,
-    drop_last=False,
-)
-
-evaluator = dict(
-    type="ImageNetEvaluator",
-    use_gpu=True,
-)
-
-infer_ckpt = dict(
-    pretrain_model=None,
-    ckpt2model_json=None,
-    to_cuda=False,
-)
