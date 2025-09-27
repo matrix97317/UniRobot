@@ -46,6 +46,7 @@ disable_error_code = [
   "index",
   "misc",
   "operator",
+  "override",
   "return-value",
   "syntax",
   "union-attr",

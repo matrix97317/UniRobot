@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 """Robot So101."""
+import os
+import select
+import sys
+import time
+import shutil
 import logging
 from abc import ABC
 from abc import abstractmethod
@@ -8,12 +13,11 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
+from threading import Thread, Event, Lock
+from queue import Queue
+import json
 
-import os
-import select
-import sys
-import time
-import shutil
+import cv2
 import h5py
 import numpy as np
 
@@ -21,6 +25,7 @@ from unirobot.utils.unirobot_slot import SENSOR
 from unirobot.utils.unirobot_slot import MOTOR
 from unirobot.utils.unirobot_slot import TELEOPERATOR
 from unirobot.robot.robot_interface import BaseRobot
+from unirobot.brain.data.dataset.act_dataset import ACTDataset
 
 
 logger = logging.getLogger(__name__)
@@ -59,6 +64,7 @@ class So101(BaseRobot):
         fps: int = 25,
         dataset_dir: str = "./so101_dataset",
         task_name: str = "default",
+        episode_format: str = "episode_{:d}.hdf5",
     ):
         """Init."""
         super().__init__(
@@ -71,21 +77,64 @@ class So101(BaseRobot):
         )
         self._top_sensor = SENSOR.build(self._sensor_cfg["top"])
         self._hand_sensor = SENSOR.build(self._sensor_cfg["hand"])
+        self._camera_names = ["top", "hand"]
         self._motor = MOTOR.build(self._motor_cfg)
         self._teleoper = TELEOPERATOR.build(self._teleoperator_cfg)
         self._fps = fps
         self._count_episode = 0
         self._dataset_dir = dataset_dir
         self._task_name = task_name
-        self._colloct_data: dict = {"top_img": [], "hand_img": [], "action": []}
+        self._episode_format = episode_format
+        self._colloct_data: dict = {
+            "top": [],
+            "hand": [],
+            "obs_action": [],
+            "action": [],
+        }
         self._start_colloct = False
         self._frame_count = 0
+        self.init_dataset()
+        # save data thread
+        self._data_queue = Queue(maxsize=10)
+        self._data_thread = Thread(
+            target=self._save_data,
+            args=(
+                self._dataset_dir,
+                self._task_name,
+                self._camera_names,
+                self._count_episode,
+                self._episode_format,
+            ),
+            daemon=True,
+        )
+
+    def init_dataset(self, *args, **kwargs) -> None:
+        """Init dataset."""
+        task_data_dir = os.path.join(self._dataset_dir, self._task_name)
+        if not os.path.exists(task_data_dir):
+            os.makedirs(task_data_dir, exist_ok=True)
+        else:
+            meta_file = os.path.join(task_data_dir, "meta.json")
+            if not os.path.exists(meta_file):
+                logger.error("Dataset dir exist but not meta.json %s", meta_file)
+                raise FileExistsError(
+                    f"Dataset dir exist but not meta.json {meta_file}"
+                )
+
+            with open(meta_file, "r", encoding="utf-8") as f:
+                meta_data = json.load(f)
+            self._count_episode = meta_data["count_episode"]
+            logger.info(
+                "Init dataset dir: %s, count episode: %s ",
+                self._dataset_dir,
+                self._count_episode,
+            )
 
     def get_observation(self, *args, **kwargs) -> Any:
         """Get env info from sensors."""
         top_img = self._top_sensor.get_async()
         hand_img = self._hand_sensor.get_async()
-        return {"top_img": top_img, "hand_img": hand_img}
+        return {"top": top_img, "hand": hand_img}
 
     def get_teleoperator(self, *args, **kwargs) -> Any:
         """Get env info from teleoperator."""
@@ -102,23 +151,34 @@ class So101(BaseRobot):
             self._hand_sensor.open()
             self._motor.open()
             self._teleoper.open()
+            self._data_thread.start()
             while True:
                 loop_start = time.perf_counter()
                 sensor_info = self.get_observation()
                 tele_info = self.get_teleoperator()
                 actual_action = self.set_action(action=tele_info["motor_info"])
                 dt_s = time.perf_counter() - loop_start
-                time.sleep(1 / self._fps - dt_s)
+                if (1 / self._fps - dt_s) < 0:
+                    logger.warning(
+                        f"Run So101 too slow: {dt_s*1e3:.2f}ms, expect {(1/self._fps)*1e3:.2f}ms"
+                    )
+                    time.sleep(1 / self._fps)
+                else:
+                    time.sleep(1 / self._fps - dt_s)
                 loop_s = time.perf_counter() - loop_start
                 logger.info("Action: %s", actual_action)
                 logger.info(f"\ntime: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
                 if self._start_colloct:
                     logger.info("Collect Frame ID: %s", self._frame_count)
-                    self._colloct_data["top_img"].append(sensor_info["top_img"])
-                    self._colloct_data["hand_img"].append(sensor_info["hand_img"])
+                    self._colloct_data["top"].append(sensor_info["top"])
+                    self._colloct_data["hand"].append(sensor_info["hand"])
+                    self._colloct_data["obs_action"].append(
+                        np.array(list(tele_info["motor_info"].values()))
+                    )
                     self._colloct_data["action"].append(
                         np.array(list(actual_action.values()))
                     )
+
                     self._frame_count += 1
                 if enter_pressed("s"):
                     if not self._start_colloct:
@@ -127,10 +187,11 @@ class So101(BaseRobot):
                     else:
                         self._start_colloct = False
                         self._count_episode += 1
-                        self._save_data()
+                        self._data_queue.put(self._colloct_data)
                         self._colloct_data = {
-                            "top_img": [],
-                            "hand_img": [],
+                            "top": [],
+                            "hand": [],
+                            "obs_action": [],
                             "action": [],
                         }
                         logger.info("Save Episode ID: %s", self._count_episode)
@@ -146,11 +207,17 @@ class So101(BaseRobot):
             self._hand_sensor.close()
             self._teleoper.close()
         except KeyboardInterrupt:
-            logger.error("Close Robot %s", self)
+            logger.error("Starting Close Robot..... %s", self)
+            logger.warning("Process the remaining data")
+            self._data_queue.join()
             self._motor.close()
             self._top_sensor.close()
             self._hand_sensor.close()
             self._teleoper.close()
+            logger.warning("All data processed")
+            logger.info("start compute norm stats")
+            self._compte_norm_stats()
+            logger.error("Finished Close Robot %s", self)
 
         logger.info("Close Robot %s", self)
 
@@ -176,31 +243,103 @@ class So101(BaseRobot):
         """Run model post process."""
         raise NotImplementedError()
 
+    def _compte_norm_stats(self) -> None:
+        """Compute norm stats for dataset."""
+        task_data_dir = os.path.join(self._dataset_dir, self._task_name)
+
+        if not os.path.exists(task_data_dir):
+            logger.error("Dataset dir not exist: %s", task_data_dir)
+            raise FileNotFoundError(f"Dataset dir not exist: {task_data_dir}")
+
+        if not os.path.exists(os.path.join(task_data_dir, "meta.json")):
+            logger.error(
+                "Dataset dir not exist meta.json: %s",
+                os.path.join(task_data_dir, "meta.json"),
+            )
+            raise FileNotFoundError(
+                f"Dataset dir not exist meta.json: {os.path.join(task_data_dir, 'meta.json')}"
+            )
+
+        with open(os.path.join(task_data_dir, "meta.json"), "r", encoding="utf-8") as f:
+            meta_data = json.load(f)
+
+        ACTDataset.get_norm_stats(task_data_dir, meta_data["count_episode"])
+
     def _save_data(
         self,
+        dataset_dir: str,
+        task_name: str,
+        camera_names: List[str],
+        count_episode: int,
+        episode_format: str,
     ):
-        task_data_dir = os.path.join(self._dataset_dir, self._task_name)
-        if os.path.exists(task_data_dir) and self._count_episode == 0:
-            shutil.rmtree(task_data_dir)
-        os.makedirs(task_data_dir, exist_ok=True)
-        episode_file = os.path.join(
-            task_data_dir, f"episode_{self._count_episode:04d}.hdf5"
-        )
-        top_imgs = np.stack(self._colloct_data["top_img"], axis=0)
-        hand_imgs = np.stack(self._colloct_data["hand_img"], axis=0)
-        action = np.stack(self._colloct_data["action"], axis=0)
+        """Save data to dataset."""
+        try:
+            curr_episode = count_episode
+            task_data_dir = os.path.join(dataset_dir, task_name)
+            while True:
+                data = self._data_queue.get()
+                # compress and pad images
+                if data is None:
+                    continue
+                all_encoded = []
+                img_data_dict = {}
+                for cam in camera_names:
+                    key = f"/observations/images/{cam}"
+                    encoded_list = []
+                    for img in data[cam]:
+                        _, enc = cv2.imencode(
+                            ".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 50]
+                        )
+                        encoded_list.append(enc)
+                        all_encoded.append(len(enc))
+                    img_data_dict[key] = encoded_list
 
-        with h5py.File(episode_file, "w") as f:
-            # 创建数据集
-            f.create_dataset(
-                "top_imgs", data=top_imgs, compression="gzip", compression_opts=4
-            )
-            f.create_dataset(
-                "hand_imgs", data=hand_imgs, compression="gzip", compression_opts=4
-            )
-            f.create_dataset(
-                "action", data=action, compression="gzip", compression_opts=4
-            )
-            # 添加元数据
-            f.attrs["frames_num"] = top_imgs.shape[0]
-        logger.warning("Save data to %s", episode_file)
+                padded_size = max(all_encoded)
+
+                for cam in camera_names:
+                    key = f"/observations/images/{cam}"
+                    padded = [
+                        np.pad(enc, (0, padded_size - len(enc)), constant_values=0)
+                        for enc in img_data_dict[key]
+                    ]
+                    img_data_dict[key] = padded
+
+                # save episode
+                episode_file = os.path.join(
+                    task_data_dir, episode_format.format(curr_episode)
+                )
+                frame_cnt = len(data[camera_names[0]])
+
+                with h5py.File(episode_file, "w", rdcc_nbytes=1024**2 * 2) as root:
+                    obs_dict = root.create_group("observations")
+                    image = obs_dict.create_group("images")
+
+                    for cam_name in camera_names:
+                        img_shape = (frame_cnt, padded_size)
+                        img_chunk = (1, padded_size)
+
+                        image.create_dataset(
+                            cam_name, img_shape, "uint8", chunks=img_chunk
+                        )
+
+                        image[cam_name][...] = img_data_dict[
+                            f"/observations/images/{cam_name}"
+                        ]
+
+                    state_dim = 6
+                    obs_dict.create_dataset("qpos", (frame_cnt, state_dim))
+                    root.create_dataset("action", (frame_cnt, state_dim))
+                    obs_dict["qpos"][...] = data["obs_action"]
+                    root["action"][...] = data["action"]
+                curr_episode += 1
+                # save meta
+                with open(
+                    os.path.join(task_data_dir, "meta.json"), "w", encoding="utf-8"
+                ) as f:
+                    json.dump({"count_episode": curr_episode}, f)
+                logger.warning("Save data to %s", episode_file)
+
+                self._data_queue.task_done()
+        except Exception as e:
+            logger.error("So101 save data occur error: %s", e)

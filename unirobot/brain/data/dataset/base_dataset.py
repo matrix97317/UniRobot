@@ -13,7 +13,6 @@ from typing import Union
 from torch.utils.data import ConcatDataset
 from torch.utils.data import Dataset
 from torch.utils.data._utils.collate import default_collate
-from torch.utils.data.dataset import T_co
 from torchvision.transforms import Compose
 
 from unirobot.utils.unirobot_slot import TRANSFORM
@@ -22,7 +21,7 @@ from unirobot.utils.unirobot_slot import TRANSFORM
 logger = logging.getLogger(__name__)
 
 
-class BaseDataset(Dataset[T_co], ABC):
+class BaseDataset(Dataset, ABC):
     """An abstract class representing a :class:`Dataset`.
 
     All datasets that represent a map from keys to data samples should subclass
@@ -94,11 +93,11 @@ class BaseDataset(Dataset[T_co], ABC):
             )
 
     @abstractmethod
-    def __getitem__(self, index: int) -> T_co:
+    def __getitem__(self, index: int) -> None:
         """Get one data item."""
         raise NotImplementedError()
 
-    def __add__(self, other: "Dataset[T_co]") -> "ConcatDataset[T_co]":
+    def __add__(self, other: "Dataset") -> "ConcatDataset":
         """Concat Datasets."""
         return ConcatDataset([self, other])
 

@@ -232,25 +232,45 @@ class ACTDataset(BaseDataset):
                 action = root["/action"][()]
             all_qpos_data.append(torch.from_numpy(qpos))
             all_action_data.append(torch.from_numpy(action))
-        all_qpos_data = torch.stack(all_qpos_data)
-        all_action_data = torch.stack(all_action_data)
+        all_qpos_data = torch.cat(all_qpos_data)
+        all_action_data = torch.cat(all_action_data)
         # all_action_data = all_action_data
 
         # normalize action data
-        action_mean = all_action_data.mean(dim=[0, 1], keepdim=True)
-        action_std = all_action_data.std(dim=[0, 1], keepdim=True)
+        action_mean = all_action_data.mean(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
+        action_std = all_action_data.std(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
         action_std = torch.clip(action_std, 1e-2, np.inf)  # clipping
 
         # normalize qpos data
-        qpos_mean = all_qpos_data.mean(dim=[0, 1], keepdim=True)
-        qpos_std = all_qpos_data.std(dim=[0, 1], keepdim=True)
+        qpos_mean = all_qpos_data.mean(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
+        qpos_std = all_qpos_data.std(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
         qpos_std = torch.clip(qpos_std, 1e-2, np.inf)  # clipping
 
         stats = {
-            "action_mean": action_mean.numpy().squeeze(),
-            "action_std": action_std.numpy().squeeze(),
-            "qpos_mean": qpos_mean.numpy().squeeze(),
-            "qpos_std": qpos_std.numpy().squeeze(),
+            "action_mean": action_mean.numpy(),
+            "action_std": action_std.numpy(),
+            "qpos_mean": qpos_mean.numpy(),
+            "qpos_std": qpos_std.numpy(),
             "example_qpos": qpos,
         }
         with open(os.path.join(dataset_dir, "norm_stats.pkl"), "wb") as fout:
