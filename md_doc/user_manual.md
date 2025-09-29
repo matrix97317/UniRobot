@@ -44,6 +44,5 @@ PS: 由于集群基础环境信息不一样，请自行根据集群信息，修�
 ```
 机器人本体:
 pipenv run unirobot robot-run -h # 查看帮助说明
-pipenv run unirobot robot-run /path/your_config 
+pipenv run unirobot robot-run /path/your_config
 ```
-
