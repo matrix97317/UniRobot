@@ -2,7 +2,7 @@
 
 This demo uses Lerobot's SO-ARM101 robot as an example, and we employ the ACT model. The entire demo showcases data collection, model training, and actual robot operation.
 
-### 数据采集
+### Data collection
 
 ```
 pipenv run unirobot robot-run /path/your_config -n task_name -rt 'teleoperation'
