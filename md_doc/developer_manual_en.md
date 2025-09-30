@@ -1,30 +1,30 @@
 
 # Developer Manual
 
-[English](./developer_manual_en.md)
 
-首先，很开心你想成为一名UniRobot 开发者，下面将一步一步引导你完成开发流程设置。
+
+First of all, we're excited that you want to become a UniRobot developer! The following steps will guide you through the development setup process.
 
 ### STEP 0. Build Docker
 
-首先需要你安装Docker工具，具体操作参见:https://docs.docker.com/get-started/
+First, you need to install Docker tools. For specific instructions, see: https://docs.docker.com/get-started/
 
-如果你已经有合理的Docker镜像了，你可以跳过该步骤。如果没有，可以按照以下流程操作:
+If you already have a suitable Docker image, you can skip this step. If not, follow these steps:
 
 ```
 $ git clone https://github.com/matrix97317/UniRobot.git
 $ cd UniRobot
 $ cd dockers
-# 如果你是需要进行Brain方面的开发则进行如下操作:
+# If you need to develop for the Brain aspect, proceed as follows:
 $ sudo docker buildx build --platform=linux/amd64 -t unirobot_brain:v1.0.0 -f BrainDockerfile .
 $ sudo docker images //you can look ` unirobot_brain:v1.0.0`
-# 如果你是需要进行Robot方面的开发则进行如下操作:
+# If you need to develop for the Robot aspect, proceed as follows:
 $ sudo docker buildx build --platform=linux/amd64 -t unirobot_robot:v1.0.0 -f RobotDockerfile .
 $ sudo docker images //you can look ` unirobot_robot:v1.0.0`
 ```
 
 ### STEP 1. Clone Repo
-如果你已经Clone该Repo可以跳过该步骤
+If you have already cloned the repository, you can skip this step.
 
 ```
 $ git clone https://github.com/matrix97317/UniRobot.git
@@ -42,11 +42,11 @@ $ make pre-commit
 
 ### STEP 3. Develop Project
 
-现在你可以开始开发你感兴趣的部分了（Brain OR Robot）
+Now you can start developing the parts that interest you (Brain OR Robot).
 
 ### STEP 4. Add your unit test.
 
-为了保证项目的健壮性，你必须提供必要的单元测试。
+To ensure the robustness of the project, you must provide necessary unit tests.
 
 ### STEP 5. Upload your commit to your branch
 
