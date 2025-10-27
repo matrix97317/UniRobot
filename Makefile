@@ -4,7 +4,7 @@
 CI=false
 PIPRUN := pipenv run
 PKGDIR := unirobot
-
+export PIPENV_VENV_IN_PROJECT=1
 
 # Remove common intermediate files.
 clean:

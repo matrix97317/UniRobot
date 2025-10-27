@@ -22,7 +22,6 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from torch.utils.data.distributed import Sampler
-from torch.utils.data.sampler import T_co
 
 from unirobot.brain.data.dataset.base_dataset import BaseDataset
 from unirobot.brain.infra.distributed.initialization.parallel_state import (
@@ -36,7 +35,7 @@ from unirobot.brain.infra.distributed.initialization.parallel_state import (
 logger = logging.getLogger(__name__)
 
 
-class URDistributedSampler(Sampler[T_co]):
+class URDistributedSampler(Sampler):
     """Sampler that restricts data loading to a subset of the dataset.
 
     It is especially useful in conjunction with

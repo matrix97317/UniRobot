@@ -69,7 +69,8 @@ disable=c-extension-no-member,
         too-many-locals,
         unsubscriptable-object,
         unknown-option-value,
-        too-many-statements
+        too-many-statements,
+        import-error
 
 
 
