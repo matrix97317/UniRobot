@@ -3,7 +3,7 @@
 black
 build
 # New version of flake8 broken many plugins.
-flake8 < 5
+flake8==4.0.1
 flake8-absolute-import
 flake8-bandit
 flake8-black

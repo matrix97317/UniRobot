@@ -84,7 +84,7 @@ class ACTModel(BaseFullModel):
         self.query_embed = nn.Embedding(self.num_queries, hidden_dim)
         if self._backbone is not None:
             self.input_proj = nn.Conv2d(num_channels, hidden_dim, kernel_size=1)
-            self.input_proj_robot_state = nn.Linear(14, hidden_dim)
+            self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
         else:
             # input_dim = 14 + 7 # robot_state + env_state
             self.input_proj_robot_state = nn.Linear(14, hidden_dim)
@@ -95,9 +95,11 @@ class ACTModel(BaseFullModel):
         self.latent_dim = 32  # final size of latent z # TODO tune
         self.cls_embed = nn.Embedding(1, hidden_dim)  # extra cls token embedding
         self.encoder_action_proj = nn.Linear(
-            14, hidden_dim
+            state_dim, hidden_dim
         )  # project action to embedding
-        self.encoder_joint_proj = nn.Linear(14, hidden_dim)  # project qpos to embedding
+        self.encoder_joint_proj = nn.Linear(
+            state_dim, hidden_dim
+        )  # project qpos to embedding
         self.latent_proj = nn.Linear(
             hidden_dim, self.latent_dim * 2
         )  # project hidden state to latent std, var
@@ -157,7 +159,7 @@ class ACTModel(BaseFullModel):
             all_cam_features = []
             all_cam_pos = []
             for cam_id, cam_name in enumerate(self.camera_names):
-                features, pos = self.backbone(image[:, cam_id])  # HARDCODED
+                features, pos = self._backbone(image[:, cam_id])  # HARDCODED
                 features = features[-1]  # take the last layer feature
                 pos = pos[-1]
                 all_cam_features.append(self.input_proj(features))
@@ -208,6 +210,10 @@ class ACTModel(BaseFullModel):
 
         actions = actions[:, : self.num_queries]
         is_pad = is_pad[:, : self.num_queries]
+        # print( qpos.shape)
+        # print( actions.shape)
+        # print( is_pad.shape)
+        # breakpoint()
         bs, _ = qpos.shape
         # Obtain latent z from action sequence
         # project action sequence to embedding dim, and concat with a CLS token

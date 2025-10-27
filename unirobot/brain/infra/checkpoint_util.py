@@ -80,7 +80,7 @@ def load_checkpoint(
         ckpt_path,
     )
 
-    return torch.load(ckpt_path, map_location=_map_location)
+    return torch.load(ckpt_path, map_location=_map_location, weights_only=False)
 
 
 class CheckpointUtil:  # pylint: disable=too-many-instance-attributes
