@@ -225,7 +225,7 @@ infer = dict(
     infer_type="torch",
     export_type=None,
     eval_ckpt_list=[
-        "/root/workspace/UniRobot/output/exp_default/baseline/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
+        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline3/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
     ],
     test_open_loop=True,
     open_model_server=False,

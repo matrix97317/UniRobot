@@ -8,6 +8,9 @@ from typing import Any
 from typing import Callable
 from typing import Optional
 
+import torch
+import numpy as np
+
 from unirobot.utils.cfg_parser import PyConfig
 from unirobot.brain.infra.checkpoint_util import CheckpointUtil
 from unirobot.utils.file_util import FileUtil
@@ -17,6 +20,7 @@ from unirobot.brain.infra.distributed.initialization.parallel_state import (
 from unirobot.utils.unirobot_slot import FULL_MODEL
 from unirobot.utils.unirobot_slot import DATASET
 from unirobot.brain.utils.vis_open_loop import plot_dimension_comparison
+from unirobot.brain.utils.filter_algo import SimpleKalmanFilter
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +72,7 @@ class BaseInfer:
         self,
     ) -> None:
         """Build dataset."""
-        self._cfg.dataloader["dataset_cfg"]["mode"] = "train"
+        self._cfg.dataloader["dataset_cfg"]["mode"] = "val"
         self._dataset = DATASET.build(self._cfg.dataloader.dataset_cfg)
 
     def build_model(
@@ -77,6 +81,7 @@ class BaseInfer:
         """Build model."""
         self._cfg.model_flow.full_model_cfg.train_mode = False
         self._model = FULL_MODEL.build(self._cfg.model_flow.full_model_cfg)
+        self._model.cuda()
 
     def load_ckpt(
         self,
@@ -119,11 +124,18 @@ class BaseInfer:
     ) -> None:
         """Infer function."""
         if self._test_open_loop:
+            all_time_actions = torch.zeros([500, 500+40, 6]).cuda()
+            last_raw_action = np.zeros((1,6))
+            kl = None
             data_list = []
+            # self._model.cuda()
             self._model.eval()
             chunk_action = []
-            for idx, data in enumerate(self._dataset.get_infer_data(epsoide_idx=3)):
+            for idx, data in enumerate(self._dataset.get_infer_data(epsoide_idx=1)):
                 if data is not None:
+                    data["actions"] = data["actions"].cuda()
+                    data["image"] = data["image"].cuda()
+                    data["qpos"] = data["qpos"].cuda()
                     print(data["actions"].shape)
                     print(data["image"].shape)
                     print(data["qpos"].shape)
@@ -131,20 +143,54 @@ class BaseInfer:
                     output = self._model.infer_forward(data)
                     print(output["a_hat"].shape)
                     model_action = (
-                        output["a_hat"].detach().numpy()[0, 0, :]
+                        output["a_hat"].cpu().detach().numpy()[0, 0, :]
                         * self._dataset._norm_stats["action_std"]
                     ) + self._dataset._norm_stats["action_mean"]
-                    # print(model_action.shape)
+                    print(model_action.shape)
+                    print(output["a_hat"][0].device)
+                    # all_time_actions[[idx], idx:idx+40] = output["a_hat"][0]
+                    # actions_for_curr_step = all_time_actions[:, idx]
+                    # actions_populated = torch.all(actions_for_curr_step != 0, axis=1)
+                    # actions_for_curr_step = actions_for_curr_step[actions_populated]
+                    # print("actions_for_curr_step:", actions_for_curr_step.shape)
+                    # k = 0.01
+                    # exp_weights = np.exp(-k * np.arange(40)[::-1])
+                    # exp_weights = exp_weights / exp_weights.sum()
+                    # print("exp_weights sum:", exp_weights)
+                    # exp_weights = torch.from_numpy(exp_weights).cuda().unsqueeze(dim=1)
+                    # print("exp_weights:", exp_weights.shape)
+                    # raw_action = (output["a_hat"][0] * exp_weights).sum(dim=0, keepdim=True)
+                    # print("raw action:", raw_action.shape)
+                    # model_action = (
+                    #     raw_action.cpu().detach().numpy()
+                    #     * self._dataset._norm_stats["action_std"]
+                    # ) + self._dataset._norm_stats["action_mean"]
+                    # new_raw_action = last_raw_action*0.5+raw_action.cpu().detach().numpy()*0.5
+                    # last_raw_action = raw_action.cpu().detach().numpy()
+
+                    # model_action = (
+                    #     new_raw_action
+                    #     * self._dataset._norm_stats["action_std"]
+                    # ) + self._dataset._norm_stats["action_mean"]
+                    if idx ==0:
+                        kl = SimpleKalmanFilter(
+                            process_variance=0.01,
+                            measurement_variance=0.1,
+                            initial_position=model_action[0],
+                        )
+                    kl.predict()
+                    filtered_position = kl.update(model_action[0])
+                    model_action[0] = filtered_position
                     data_list.append(
                         {
-                            "gt": data["actions"].cpu().numpy(),
+                            "gt": data["actions"].cpu().detach().numpy(),
                             "model": model_action[0],
                         }
                     )
                     if idx == 50:
                         for i in range(output["a_hat"][0].shape[0]):
                             chunk_model_action = (
-                                output["a_hat"].detach().numpy()[0, i, :]
+                                output["a_hat"].cpu().detach().numpy()[0, i, :]
                                 * self._dataset._norm_stats["action_std"]
                             ) + self._dataset._norm_stats["action_mean"]
                             chunk_action.append(
@@ -153,6 +199,7 @@ class BaseInfer:
                                     "model": chunk_model_action[0],
                                 }
                             )
+                    del data
 
             plot_dimension_comparison(
                 data_list,

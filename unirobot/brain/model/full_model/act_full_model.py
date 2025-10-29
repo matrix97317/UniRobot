@@ -116,6 +116,7 @@ class ACTModel(BaseFullModel):
             2, hidden_dim
         )  # learned position embedding for proprio and latent
         self.init_weight()
+        # self._latent_sample = torch.zeros([1, self.latent_dim], dtype=torch.float32).cuda()
 
     def init_weight(self) -> None:
         """Init model weight."""
@@ -153,6 +154,8 @@ class ACTModel(BaseFullModel):
             qpos.device
         )
         latent_input = self.latent_out_proj(latent_sample)
+       
+        
 
         if self._backbone is not None:
             # Image observation features and position embeddings

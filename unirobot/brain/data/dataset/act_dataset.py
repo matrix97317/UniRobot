@@ -154,7 +154,7 @@ class ACTDataset(BaseDataset):
             #     print(image_dict[cam_name].shape)
             #     breakpoint()
             all_cam_images.append(
-                cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[None,]
+                cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[:,:,::-1][None,]
             )
             # all_cam_images.append(image_dict[cam_name])
         all_cam_images = np.concatenate(all_cam_images, axis=0)
@@ -230,7 +230,7 @@ class ACTDataset(BaseDataset):
                     #     print(image_dict[cam_name].shape)
                     #     breakpoint()
                     all_cam_images.append(
-                        cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[None,]
+                        cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[:,:,::-1][None,]
                     )
                     # all_cam_images.append(image_dict[cam_name])
                 all_cam_images = np.concatenate(all_cam_images, axis=0)
