@@ -124,8 +124,8 @@ class BaseInfer:
     ) -> None:
         """Infer function."""
         if self._test_open_loop:
-            all_time_actions = torch.zeros([500, 500+40, 6]).cuda()
-            last_raw_action = np.zeros((1,6))
+            all_time_actions = torch.zeros([500, 500 + 40, 6]).cuda()
+            last_raw_action = np.zeros((1, 6))
             kl = None
             data_list = []
             # self._model.cuda()
@@ -172,7 +172,7 @@ class BaseInfer:
                     #     new_raw_action
                     #     * self._dataset._norm_stats["action_std"]
                     # ) + self._dataset._norm_stats["action_mean"]
-                    if idx ==0:
+                    if idx == 0:
                         kl = SimpleKalmanFilter(
                             process_variance=0.01,
                             measurement_variance=0.1,

@@ -154,8 +154,6 @@ class ACTModel(BaseFullModel):
             qpos.device
         )
         latent_input = self.latent_out_proj(latent_sample)
-       
-        
 
         if self._backbone is not None:
             # Image observation features and position embeddings
