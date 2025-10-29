@@ -116,6 +116,7 @@ class ACTModel(BaseFullModel):
             2, hidden_dim
         )  # learned position embedding for proprio and latent
         self.init_weight()
+        # self._latent_sample = torch.zeros([1, self.latent_dim], dtype=torch.float32).cuda()
 
     def init_weight(self) -> None:
         """Init model weight."""
