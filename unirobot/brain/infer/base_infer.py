@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """base infer."""
 import os
+import time
 import logging
 from abc import ABC
 from abc import abstractmethod
@@ -21,6 +22,7 @@ from unirobot.utils.unirobot_slot import FULL_MODEL
 from unirobot.utils.unirobot_slot import DATASET
 from unirobot.brain.utils.vis_open_loop import plot_dimension_comparison
 from unirobot.brain.utils.filter_algo import SimpleKalmanFilter
+from unirobot.brain.utils.http_server import FastAPIHTTPPolicyServer
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +50,10 @@ class BaseInfer:
         infer_type: Optional[str] = None,
         export_type: Optional[str] = None,
         eval_ckpt_list: Optional[list] = None,
-        test_open_loop: bool = False,
-        open_model_server: bool = False,
+        use_kf: bool = False,
+        infer_chunk_step: int = 0,
+        host_addr: str = "127.0.0.1",
+        host_port: int = 6008,
     ) -> None:
         """Init BaseInfer based config dict."""
         self._cfg = cfg
@@ -61,12 +65,30 @@ class BaseInfer:
         self._dataset = None
         self._infer_type = infer_type
         self._export_type = export_type
-        self._test_open_loop = test_open_loop
-        self._open_model_server = open_model_server
+        self._use_kf = use_kf
+        self._infer_chunk_step = infer_chunk_step
+        self._infer_cnt = 0
 
         self.build_dataset()
         self.build_model()
         self.load_ckpt()
+        logger.warning("infer_type: %s", self._infer_type)
+        logger.warning("infer_chunk_step: %d", self._infer_chunk_step)
+        server_metadata = {
+            "server_name": "FastAPI HTTP Policy Server - Binary Support",
+            "version": "1.0.0",
+            "capabilities": ["msgpack_inference"],
+            "supported_formats": ["msgpack", "binary"],
+            "max_batch_size": 10,
+            "binary_support": True,
+        }
+        self._model_server = FastAPIHTTPPolicyServer(
+            policy=self.model_infer,
+            host=host_addr,
+            port=host_port,
+            metadata=server_metadata,
+            infer_chunk_step=infer_chunk_step,
+        )
 
     def build_dataset(
         self,
@@ -119,59 +141,35 @@ class BaseInfer:
         )
         self._ckpt_manager.load_model()
 
-    def infer(
+    def open_loop_infer(
         self,
     ) -> None:
-        """Infer function."""
-        if self._test_open_loop:
-            all_time_actions = torch.zeros([500, 500 + 40, 6]).cuda()
-            last_raw_action = np.zeros((1, 6))
-            kl = None
-            data_list = []
-            # self._model.cuda()
-            self._model.eval()
-            chunk_action = []
-            for idx, data in enumerate(self._dataset.get_infer_data(epsoide_idx=1)):
-                if data is not None:
-                    data["actions"] = data["actions"].cuda()
-                    data["image"] = data["image"].cuda()
-                    data["qpos"] = data["qpos"].cuda()
-                    print(data["actions"].shape)
-                    print(data["image"].shape)
-                    print(data["qpos"].shape)
-                    print(data["frame_cnt"])
-                    output = self._model.infer_forward(data)
-                    print(output["a_hat"].shape)
-                    model_action = (
-                        output["a_hat"].cpu().detach().numpy()[0, 0, :]
-                        * self._dataset._norm_stats["action_std"]
-                    ) + self._dataset._norm_stats["action_mean"]
-                    print(model_action.shape)
-                    print(output["a_hat"][0].device)
-                    # all_time_actions[[idx], idx:idx+40] = output["a_hat"][0]
-                    # actions_for_curr_step = all_time_actions[:, idx]
-                    # actions_populated = torch.all(actions_for_curr_step != 0, axis=1)
-                    # actions_for_curr_step = actions_for_curr_step[actions_populated]
-                    # print("actions_for_curr_step:", actions_for_curr_step.shape)
-                    # k = 0.01
-                    # exp_weights = np.exp(-k * np.arange(40)[::-1])
-                    # exp_weights = exp_weights / exp_weights.sum()
-                    # print("exp_weights sum:", exp_weights)
-                    # exp_weights = torch.from_numpy(exp_weights).cuda().unsqueeze(dim=1)
-                    # print("exp_weights:", exp_weights.shape)
-                    # raw_action = (output["a_hat"][0] * exp_weights).sum(dim=0, keepdim=True)
-                    # print("raw action:", raw_action.shape)
-                    # model_action = (
-                    #     raw_action.cpu().detach().numpy()
-                    #     * self._dataset._norm_stats["action_std"]
-                    # ) + self._dataset._norm_stats["action_mean"]
-                    # new_raw_action = last_raw_action*0.5+raw_action.cpu().detach().numpy()*0.5
-                    # last_raw_action = raw_action.cpu().detach().numpy()
+        """Open loop infer."""
+        kl = None
+        data_list = []
+        self._model.eval()
+        infer_cnt = 0
+        chunk_action = []
+        for idx, data in enumerate(self._dataset.get_infer_data(epsoide_idx=0)):
+            if data is not None:
+                data["actions"] = data["actions"].cuda()
+                data["image"] = data["image"].cuda()
+                data["qpos"] = data["qpos"].cuda()
 
-                    # model_action = (
-                    #     new_raw_action
-                    #     * self._dataset._norm_stats["action_std"]
-                    # ) + self._dataset._norm_stats["action_mean"]
+                s = time.perf_counter()
+                if infer_cnt == 0:
+                    output = self._model.infer_forward(data)
+
+                model_action = (
+                    output["a_hat"].cpu().detach().numpy()[0, infer_cnt, :]
+                    * self._dataset._norm_stats["action_std"]
+                ) + self._dataset._norm_stats["action_mean"]
+
+                infer_cnt += 1
+                if infer_cnt >= self._infer_chunk_step:
+                    infer_cnt = 0
+
+                if self._use_kf:
                     if idx == 0:
                         kl = SimpleKalmanFilter(
                             process_variance=0.01,
@@ -181,43 +179,89 @@ class BaseInfer:
                     kl.predict()
                     filtered_position = kl.update(model_action[0])
                     model_action[0] = filtered_position
-                    data_list.append(
-                        {
-                            "gt": data["actions"].cpu().detach().numpy(),
-                            "model": model_action[0],
-                        }
-                    )
-                    if idx == 50:
-                        for i in range(output["a_hat"][0].shape[0]):
-                            chunk_model_action = (
-                                output["a_hat"].cpu().detach().numpy()[0, i, :]
-                                * self._dataset._norm_stats["action_std"]
-                            ) + self._dataset._norm_stats["action_mean"]
-                            chunk_action.append(
-                                {
-                                    "gt": chunk_model_action[0],
-                                    "model": chunk_model_action[0],
-                                }
-                            )
-                    del data
+                e = time.perf_counter()
+                logger.info(f"infer open loop step {idx} time: {(e - s)*1000:.2f} ms")
 
-            plot_dimension_comparison(
-                data_list,
-                figsize=(20, 25),
-                dims=6,
-                save_path=os.path.join(
-                    FileUtil.get_export_dir(),
-                    "open_loop_comparison.jpg",
-                ),
-                dpi=300,
-            )
-            plot_dimension_comparison(
-                chunk_action,
-                figsize=(20, 25),
-                dims=6,
-                save_path=os.path.join(
-                    FileUtil.get_export_dir(),
-                    "chunk_action.jpg",
-                ),
-                dpi=300,
-            )
+                data_list.append(
+                    {
+                        "gt": data["actions"].cpu().detach().numpy(),
+                        "model": model_action[0],
+                    }
+                )
+                if idx == 50:
+                    for i in range(output["a_hat"][0].shape[0]):
+                        chunk_model_action = (
+                            output["a_hat"].cpu().detach().numpy()[0, i, :]
+                            * self._dataset._norm_stats["action_std"]
+                        ) + self._dataset._norm_stats["action_mean"]
+                        chunk_action.append(
+                            {
+                                "gt": chunk_model_action[0],
+                                "model": chunk_model_action[0],
+                            }
+                        )
+                del data
+
+        plot_dimension_comparison(
+            data_list,
+            figsize=(20, 25),
+            dims=6,
+            save_path=os.path.join(
+                FileUtil.get_export_dir(),
+                "open_loop_comparison.jpg",
+            ),
+            dpi=300,
+        )
+        plot_dimension_comparison(
+            chunk_action,
+            figsize=(20, 25),
+            dims=6,
+            save_path=os.path.join(
+                FileUtil.get_export_dir(),
+                "chunk_action.jpg",
+            ),
+            dpi=300,
+        )
+
+    def model_infer(self, data: Any) -> Any:
+        """Model infer function."""
+        self._model.eval()
+        model_action = None
+        with torch.no_grad():
+            data = self._dataset.preprocess_server_data(data)
+            data["image"] = data["image"].cuda()
+            data["qpos"] = data["qpos"].cuda()
+            output = self._model.infer_forward(data)
+            model_action = (
+                output["a_hat"].cpu().detach().numpy()[0, :, :]
+                * self._dataset._norm_stats["action_std"]
+            ) + self._dataset._norm_stats["action_mean"]
+
+            # self._infer_cnt +=1
+            # if self._infer_cnt >= self._infer_chunk_step:
+            #     self._infer_cnt = 0
+
+            # if self._use_kf:
+            #     if frame_idx == 0:
+            #         kl = SimpleKalmanFilter(
+            #             process_variance=0.01,
+            #             measurement_variance=0.1,
+            #             initial_position=model_action[0],
+            #         )
+            #     kl.predict()
+            #     filtered_position = kl.update(model_action[0])
+            #     model_action[0] = filtered_position
+            return model_action
+
+    def infer(
+        self,
+    ) -> None:
+        """Infer function."""
+        if self._infer_type == "open_loop":
+            self.open_loop_infer()
+
+        if self._infer_type == "model_server":
+            try:
+                self._model_server.serve_forever()
+            except KeyboardInterrupt:
+                print("\n服务器正在关闭...")
