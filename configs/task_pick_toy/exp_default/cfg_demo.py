@@ -227,6 +227,6 @@ infer = dict(
     eval_ckpt_list=[
         "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline4/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
     ],
-    use_kf= False,
-    infer_chunk_step= 5,
+    use_kf=False,
+    infer_chunk_step=5,
 )

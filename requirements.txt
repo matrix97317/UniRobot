@@ -29,3 +29,4 @@ pandas==2.3.2; platform_machine == "arm64" or platform_machine == "aarch64"
 h5py
 msgpack
 fastapi
+types-requests

@@ -194,21 +194,17 @@ class ACTDataset(BaseDataset):
             data_dict = self._transforms(data_dict)
 
         return data_dict
-    
+
     def preprocess_server_data(self, data: Any) -> Any:
         """Preprocess server data."""
         qpos = data["qpos"]
         all_cam_images = []
         for cam_name in self._camera_names:
             all_cam_images.append(
-                cv2.imdecode(data[cam_name], cv2.IMREAD_COLOR)[
-                    :, :, ::-1
-                ][
-                    None,
-                ]
+                cv2.imdecode(data[cam_name], cv2.IMREAD_COLOR)[:, :, ::-1][None,]
             )
         all_cam_images = np.concatenate(all_cam_images, axis=0)
-        
+
         image_data = torch.from_numpy(all_cam_images)
         qpos_data = torch.from_numpy(qpos).float()
         # channel last
@@ -219,9 +215,9 @@ class ACTDataset(BaseDataset):
         # action_data = (
         #     action_data - self._norm_stats["action_mean"]
         # ) / self._norm_stats["action_std"]
-        qpos_data = (
-            qpos_data - self._norm_stats["qpos_mean"]
-        ) / self._norm_stats["qpos_std"]
+        qpos_data = (qpos_data - self._norm_stats["qpos_mean"]) / self._norm_stats[
+            "qpos_std"
+        ]
 
         data_dict = {
             "image": image_data.unsqueeze(0),
@@ -230,7 +226,6 @@ class ACTDataset(BaseDataset):
         if self._transforms is not None:
             data_dict = self._transforms(data_dict)
         return data_dict
-        
 
     def get_infer_data(self, epsoide_idx) -> Any:
         """Get one item.

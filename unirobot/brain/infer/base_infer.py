@@ -68,8 +68,7 @@ class BaseInfer:
         self._use_kf = use_kf
         self._infer_chunk_step = infer_chunk_step
         self._infer_cnt = 0
-        
-        
+
         self.build_dataset()
         self.build_model()
         self.load_ckpt()
@@ -81,9 +80,15 @@ class BaseInfer:
             "capabilities": ["msgpack_inference"],
             "supported_formats": ["msgpack", "binary"],
             "max_batch_size": 10,
-            "binary_support": True
+            "binary_support": True,
         }
-        self._model_server = FastAPIHTTPPolicyServer(policy=self.model_infer,host= host_addr,port= host_port,metadata=server_metadata,infer_chunk_step=infer_chunk_step)
+        self._model_server = FastAPIHTTPPolicyServer(
+            policy=self.model_infer,
+            host=host_addr,
+            port=host_port,
+            metadata=server_metadata,
+            infer_chunk_step=infer_chunk_step,
+        )
 
     def build_dataset(
         self,
@@ -136,7 +141,9 @@ class BaseInfer:
         )
         self._ckpt_manager.load_model()
 
-    def open_loop_infer(self,) -> None:
+    def open_loop_infer(
+        self,
+    ) -> None:
         """Open loop infer."""
         kl = None
         data_list = []
@@ -148,20 +155,20 @@ class BaseInfer:
                 data["actions"] = data["actions"].cuda()
                 data["image"] = data["image"].cuda()
                 data["qpos"] = data["qpos"].cuda()
-                
+
                 s = time.perf_counter()
-                if infer_cnt ==0:
+                if infer_cnt == 0:
                     output = self._model.infer_forward(data)
-                
+
                 model_action = (
                     output["a_hat"].cpu().detach().numpy()[0, infer_cnt, :]
                     * self._dataset._norm_stats["action_std"]
                 ) + self._dataset._norm_stats["action_mean"]
-                
-                infer_cnt +=1
+
+                infer_cnt += 1
                 if infer_cnt >= self._infer_chunk_step:
                     infer_cnt = 0
-                
+
                 if self._use_kf:
                     if idx == 0:
                         kl = SimpleKalmanFilter(
@@ -173,9 +180,7 @@ class BaseInfer:
                     filtered_position = kl.update(model_action[0])
                     model_action[0] = filtered_position
                 e = time.perf_counter()
-                logger.info(
-                    f"infer open loop step {idx} time: {(e - s)*1000:.2f} ms"
-                )
+                logger.info(f"infer open loop step {idx} time: {(e - s)*1000:.2f} ms")
 
                 data_list.append(
                     {
@@ -217,7 +222,8 @@ class BaseInfer:
             ),
             dpi=300,
         )
-    def model_infer(self,data: Any) -> Any:
+
+    def model_infer(self, data: Any) -> Any:
         """Model infer function."""
         self._model.eval()
         model_action = None
@@ -230,11 +236,11 @@ class BaseInfer:
                 output["a_hat"].cpu().detach().numpy()[0, :, :]
                 * self._dataset._norm_stats["action_std"]
             ) + self._dataset._norm_stats["action_mean"]
-            
+
             # self._infer_cnt +=1
             # if self._infer_cnt >= self._infer_chunk_step:
             #     self._infer_cnt = 0
-            
+
             # if self._use_kf:
             #     if frame_idx == 0:
             #         kl = SimpleKalmanFilter(
@@ -253,10 +259,9 @@ class BaseInfer:
         """Infer function."""
         if self._infer_type == "open_loop":
             self.open_loop_infer()
-            
+
         if self._infer_type == "model_server":
             try:
                 self._model_server.serve_forever()
             except KeyboardInterrupt:
                 print("\n服务器正在关闭...")
-            
