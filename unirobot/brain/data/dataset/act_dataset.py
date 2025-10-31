@@ -362,7 +362,7 @@ class ACTDataset(BaseDataset):
                 action = root["/action"][()]
             all_qpos_data.append(torch.from_numpy(qpos))
             all_action_data.append(torch.from_numpy(action))
-            init_pos_data.append(torch.from_numpy(action)[:50,:])
+            init_pos_data.append(torch.from_numpy(action)[:50, :])
         all_qpos_data = torch.cat(all_qpos_data)
         all_action_data = torch.cat(all_action_data)
         all_init_pos_data = torch.cat(init_pos_data)
@@ -409,7 +409,7 @@ class ACTDataset(BaseDataset):
             "action_std": action_std.numpy(),
             "qpos_mean": qpos_mean.numpy(),
             "qpos_std": qpos_std.numpy(),
-            "init_pos_mean":init_pos_mean.numpy(),
+            "init_pos_mean": init_pos_mean.numpy(),
             "example_qpos": qpos,
         }
         with open(os.path.join(dataset_dir, "norm_stats.pkl"), "wb") as fout:
