@@ -353,6 +353,7 @@ class ACTDataset(BaseDataset):
         """Get norm stats from dataset."""
         all_qpos_data = []
         all_action_data = []
+        init_pos_data = []
         for episode_idx in range(num_episodes):
             dataset_path = os.path.join(dataset_dir, f"episode_{episode_idx}.hdf5")
             with h5py.File(dataset_path, "r") as root:
@@ -361,9 +362,17 @@ class ACTDataset(BaseDataset):
                 action = root["/action"][()]
             all_qpos_data.append(torch.from_numpy(qpos))
             all_action_data.append(torch.from_numpy(action))
+            init_pos_data.append(torch.from_numpy(action)[:50,:])
         all_qpos_data = torch.cat(all_qpos_data)
         all_action_data = torch.cat(all_action_data)
+        all_init_pos_data = torch.cat(init_pos_data)
         # all_action_data = all_action_data
+        init_pos_mean = all_init_pos_data.mean(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
 
         # normalize action data
         action_mean = all_action_data.mean(
@@ -400,6 +409,7 @@ class ACTDataset(BaseDataset):
             "action_std": action_std.numpy(),
             "qpos_mean": qpos_mean.numpy(),
             "qpos_std": qpos_std.numpy(),
+            "init_pos_mean":init_pos_mean.numpy(),
             "example_qpos": qpos,
         }
         with open(os.path.join(dataset_dir, "norm_stats.pkl"), "wb") as fout:
