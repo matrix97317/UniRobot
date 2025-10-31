@@ -44,7 +44,7 @@ def cli() -> None:
 @click.option(
     "-it",
     "--infer-type",
-    type=click.Choice(["torch", "trace", "tvm"], case_sensitive=False),
+    type=click.Choice(["open_loop", "model_server", "eval"], case_sensitive=False),
     default=None,
     help="Specify the type of infer model file, support [torch, trace, tvm].",
 )

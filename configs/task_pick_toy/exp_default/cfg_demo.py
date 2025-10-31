@@ -53,8 +53,8 @@ robot = dict(
 
 # deterministic seed
 seed = 666
-BATCH_SIZE = 2
-EPOCH = 4000
+BATCH_SIZE = 4
+EPOCH = 16000
 # define trainer params
 trainer = dict(
     type="ParallelTrainer",
@@ -157,7 +157,7 @@ model_flow = dict(
     ),
     loss_func_cfg=dict(
         type="ACTKLLoss",
-        kl_weight=10,
+        kl_weight=30,
     ),
     train_mode=True,
     unfold_inputs=True,
@@ -203,7 +203,7 @@ dataloader = dict(
     ),
     batch_size=BATCH_SIZE,
     seed=seed,
-    num_workers=2,
+    num_workers=4,
     pin_memory=True,
     prefetch_factor=None,
     persistent_workers=False,
@@ -222,11 +222,11 @@ ckpt = dict(
 # ======================== infer =======================
 infer = dict(
     type="BaseInfer",
-    infer_type="torch",
+    infer_type="open_loop",
     export_type=None,
     eval_ckpt_list=[
-        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline3/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
+        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline4/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
     ],
-    test_open_loop=True,
-    open_model_server=False,
+    use_kf= False,
+    infer_chunk_step= 5,
 )
