@@ -252,7 +252,7 @@ def runtime_program(
     }
 
     if infer_type is not None or export_type is not None:
-        args.update(config_cfg.inferrer)
+        args.update(config_cfg.infer)
         args["infer_type"] = infer_type
         args["export_type"] = export_type
         if dataset_mode:
@@ -260,7 +260,7 @@ def runtime_program(
                 "Specify '%s' as dataset mode.",
                 dataset_mode,
             )
-            config_cfg.infer_dataloader["dataset_cfg"]["mode"] = dataset_mode
+        # config_cfg.dataloader["dataset_cfg"]["mode"] = 'train'
         if ckpt:
             args["eval_ckpt_list"] = list(ckpt)
         inferrer = INFERRER.build(args)

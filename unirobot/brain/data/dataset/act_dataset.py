@@ -2,6 +2,7 @@
 """Dataset of ACT Model."""
 import logging
 import os
+import pickle
 from typing import Any
 from typing import Dict
 from typing import List
@@ -9,7 +10,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-import pickle
+import cv2
 import h5py
 import torch
 import numpy as np
@@ -108,16 +109,21 @@ class ACTDataset(BaseDataset):
         )
         qpos = None
         # qvel = None
+        original_action_shape = (370, 6)
+        episode_len = 370
         with h5py.File(hdf5_file, "r") as root:
-            original_action_shape = root["/action"].shape
-            episode_len = original_action_shape[0]
+            # original_action_shape = (370,6) #root["/action"].shape
+            # episode_len = 370#original_action_shape[0]
+
             if self._sample_full_episode:
                 start_ts = 0
             else:
-                start_ts = np.random.choice(episode_len)
+                start_ts = np.random.choice(root["/action"].shape[0])
             # get observation at start_ts only
             qpos = root["/observations/qpos"][start_ts]
             # qvel = root["/observations/qvel"][start_ts]
+            # print(f"------ oringinal actionshape {root["/action"][()].shape}")
+            # print(f"------ oringinal qpos {root["/observations/qpos"][()].shape}")
             image_dict = dict()
             for cam_name in self._camera_names:
                 image_dict[cam_name] = root[f"/observations/images/{cam_name}"][
@@ -125,22 +131,35 @@ class ACTDataset(BaseDataset):
                 ]
             # get all actions after and including start_ts
             action = root["/action"][
-                max(0, start_ts - 1) :
+                max(0, start_ts - 1) : episode_len
             ]  # hack, to make timesteps more aligned
             action_len = episode_len - max(
                 0, start_ts - 1
             )  # hack, to make timesteps more aligned
+        # print(f"===== action len {action_len}")
+        # print(f"===== episode_len {episode_len}")
 
         padded_action = np.zeros(original_action_shape, dtype=np.float32)
-        padded_action[:action_len] = action
+        # print(f'+++ padded_action.shape {padded_action.shape}')
+        # print(f'+++ action.shape {action.shape}')
+        padded_action[: action.shape[0], :] = action
+        # print(f'++ a padded_action.shape {padded_action.shape}')
         is_pad = np.zeros(episode_len)
-        is_pad[action_len:] = 1
+        is_pad[action.shape[0] :] = 1
 
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self._camera_names:
-            all_cam_images.append(image_dict[cam_name])
-        all_cam_images = np.stack(all_cam_images, axis=0)
+            # for frame_cnt in range(image_dict[cam_name].shape[0]):
+            #     print(image_dict[cam_name].shape)
+            #     breakpoint()
+            all_cam_images.append(
+                cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[:, :, ::-1][None,]
+            )
+            # all_cam_images.append(image_dict[cam_name])
+        all_cam_images = np.concatenate(all_cam_images, axis=0)
+        # print(all_cam_images.shape)
+        # breakpoint()
 
         # construct observations
         image_data = torch.from_numpy(all_cam_images)
@@ -159,10 +178,14 @@ class ACTDataset(BaseDataset):
         qpos_data = (qpos_data - self._norm_stats["qpos_mean"]) / self._norm_stats[
             "qpos_std"
         ]
+        # print(qpos_data.shape)
+        # print(action_data.shape)
+        # print(is_pad.shape)
+        # breakpoint()
 
         data_dict = {
             "image": image_data,
-            "qpos": qpos_data,
+            "qpos": qpos_data.squeeze(),
             "actions": action_data,
             "is_pad": is_pad,
         }
@@ -171,6 +194,112 @@ class ACTDataset(BaseDataset):
             data_dict = self._transforms(data_dict)
 
         return data_dict
+
+    def preprocess_server_data(self, data: Any) -> Any:
+        """Preprocess server data."""
+        qpos = data["qpos"]
+        all_cam_images = []
+        for cam_name in self._camera_names:
+            all_cam_images.append(
+                cv2.imdecode(data[cam_name], cv2.IMREAD_COLOR)[:, :, ::-1][None,]
+            )
+        all_cam_images = np.concatenate(all_cam_images, axis=0)
+
+        image_data = torch.from_numpy(all_cam_images)
+        qpos_data = torch.from_numpy(qpos).float()
+        # channel last
+        image_data = torch.einsum("k h w c -> k c h w", image_data)
+
+        # normalize image and change dtype to float
+        image_data = image_data / 255.0
+        # action_data = (
+        #     action_data - self._norm_stats["action_mean"]
+        # ) / self._norm_stats["action_std"]
+        qpos_data = (qpos_data - self._norm_stats["qpos_mean"]) / self._norm_stats[
+            "qpos_std"
+        ]
+
+        data_dict = {
+            "image": image_data.unsqueeze(0),
+            "qpos": qpos_data,
+        }
+        if self._transforms is not None:
+            data_dict = self._transforms(data_dict)
+        return data_dict
+
+    def get_infer_data(self, epsoide_idx) -> Any:
+        """Get one item.
+
+        Args:
+            idx (int): The index.
+
+        Returns:
+            One data item, which contains `image` and `gt`.
+        """
+        # get 1 episode data
+        current_episode_id = self._cache_records[epsoide_idx]
+        hdf5_file = os.path.join(
+            self._dataset_dir_paths, self._episode_format.format(current_episode_id)
+        )
+        qpos = None
+        # qvel = None
+        # original_action_shape = (370,6)
+        # episode_len = 370
+        with h5py.File(hdf5_file, "r") as root:
+            for frame_cnt in range(root["/action"].shape[0]):
+                qpos = root["/observations/qpos"][frame_cnt]
+                image_dict = dict()
+                for cam_name in self._camera_names:
+                    image_dict[cam_name] = root[f"/observations/images/{cam_name}"][
+                        frame_cnt
+                    ]
+                action = root["/action"][frame_cnt]
+
+                # new axis for different cameras
+                all_cam_images = []
+                for cam_name in self._camera_names:
+                    # for frame_cnt in range(image_dict[cam_name].shape[0]):
+                    #     print(image_dict[cam_name].shape)
+                    #     breakpoint()
+                    all_cam_images.append(
+                        cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[
+                            :, :, ::-1
+                        ][
+                            None,
+                        ]
+                    )
+                    # all_cam_images.append(image_dict[cam_name])
+                all_cam_images = np.concatenate(all_cam_images, axis=0)
+                # print(all_cam_images.shape)
+                # breakpoint()
+
+                # construct observations
+                image_data = torch.from_numpy(all_cam_images)
+                qpos_data = torch.from_numpy(qpos).float()
+                action_data = torch.from_numpy(action).float()
+
+                # channel last
+                image_data = torch.einsum("k h w c -> k c h w", image_data)
+
+                # normalize image and change dtype to float
+                image_data = image_data / 255.0
+                # action_data = (
+                #     action_data - self._norm_stats["action_mean"]
+                # ) / self._norm_stats["action_std"]
+                qpos_data = (
+                    qpos_data - self._norm_stats["qpos_mean"]
+                ) / self._norm_stats["qpos_std"]
+
+                data_dict = {
+                    "image": image_data.unsqueeze(0),
+                    "qpos": qpos_data,
+                    "actions": action_data,
+                    "frame_cnt": frame_cnt,
+                }
+
+                if self._transforms is not None:
+                    data_dict = self._transforms(data_dict)
+                yield data_dict
 
     def load_norm_stats(self) -> Any:
         """Load norm stats file."""
@@ -224,6 +353,7 @@ class ACTDataset(BaseDataset):
         """Get norm stats from dataset."""
         all_qpos_data = []
         all_action_data = []
+        init_pos_data = []
         for episode_idx in range(num_episodes):
             dataset_path = os.path.join(dataset_dir, f"episode_{episode_idx}.hdf5")
             with h5py.File(dataset_path, "r") as root:
@@ -232,9 +362,17 @@ class ACTDataset(BaseDataset):
                 action = root["/action"][()]
             all_qpos_data.append(torch.from_numpy(qpos))
             all_action_data.append(torch.from_numpy(action))
+            init_pos_data.append(torch.from_numpy(action)[:50, :])
         all_qpos_data = torch.cat(all_qpos_data)
         all_action_data = torch.cat(all_action_data)
+        all_init_pos_data = torch.cat(init_pos_data)
         # all_action_data = all_action_data
+        init_pos_mean = all_init_pos_data.mean(
+            dim=[
+                0,
+            ],
+            keepdim=True,
+        )
 
         # normalize action data
         action_mean = all_action_data.mean(
@@ -271,6 +409,7 @@ class ACTDataset(BaseDataset):
             "action_std": action_std.numpy(),
             "qpos_mean": qpos_mean.numpy(),
             "qpos_std": qpos_std.numpy(),
+            "init_pos_mean": init_pos_mean.numpy(),
             "example_qpos": qpos,
         }
         with open(os.path.join(dataset_dir, "norm_stats.pkl"), "wb") as fout:

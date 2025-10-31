@@ -4,6 +4,7 @@ import logging
 from importlib.metadata import version
 
 from unirobot.utils.dist_util import disable_kmp_affinity
+
 from unirobot.utils.dist_util import init_set_device
 from unirobot.utils.log_util import log_init
 

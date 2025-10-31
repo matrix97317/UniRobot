@@ -17,6 +17,9 @@
     "ParallelRes50V3=unirobot.brain.model.full_model.resnet50_parallel_model",
     "ACTModel=unirobot.brain.model.full_model.act_full_model"
   ],
+  "brain.inferrer": [
+    "BaseInfer=unirobot.brain.infer.base_infer"
+  ],
   "brain.layer": [],
   "brain.loss": [
     "ComposeWeightedLoss=unirobot.brain.model.loss.compose_weighted_loss",

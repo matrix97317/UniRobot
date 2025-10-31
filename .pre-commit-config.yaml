@@ -34,11 +34,11 @@ repos:
         types: [python]
         require_serial: true
         pass_filenames: false
-      - id: flake8
-        name: flake8
-        language: system
-        entry: pipenv run python -m flake8
-        types: [python]
+      # - id: flake8
+      #   name: flake8
+      #   language: system
+      #   entry: pipenv run python -m flake8
+      #   types: [python]
       - id: pylint
         name: pylint
         language: system

@@ -53,16 +53,17 @@ robot = dict(
 
 # deterministic seed
 seed = 666
-BATCH_SIZE = 2
+BATCH_SIZE = 4
+EPOCH = 16000
 # define trainer params
 trainer = dict(
     type="ParallelTrainer",
-    total_epochs=90,
+    total_epochs=EPOCH,
     print_freq_by_step=20,
-    save_ckpt_freq_by_epoch=89,
+    save_ckpt_freq_by_epoch=5,
     save_ckpt_freq_by_step=None,
     max_save_ckpt_num=3,
-    use_fp16=True,
+    use_fp16=False,
     use_model_channel_last=True,
     use_sync_bn=False,
     use_tensorboard=True,
@@ -81,7 +82,7 @@ trainer = dict(
     megatron_optimizer_params=None,
     num_micro_batch=1,
     clip_gradient=35,
-    lr_per_sample=0.001 / 12,  # 0.256/256
+    lr_per_sample=0.001 / 1,  # 0.256/256
     seed=seed,
     use_data_stream=True,
     use_eval_mode=False,
@@ -91,7 +92,7 @@ trainer = dict(
 # define lr scheduler params
 lr_scheduler = dict(
     type="CosineLrScheduler",
-    total_epoch=90,
+    total_epoch=EPOCH,
     min_lr=0,
 )
 
@@ -117,13 +118,13 @@ model_flow = dict(
     type="ModelFlow",
     full_model_cfg=dict(
         type="ACTModel",
-        camera_names=["top"],
-        state_dim=14,
-        chunk_size=100,
+        camera_names=["top", "hand"],
+        state_dim=6,
+        chunk_size=40,
         sub_module_cfg=dict(
             backbone=dict(
                 type="ResNet18",
-                pretrain_model="/root/workspace/act/resnet18-f37072fd.pth",
+                pretrain_model="/root/autodl-tmp/resnet18-f37072fd.pth",
                 num_channels=HIDDEN_DIM,
                 use_all_features=True,
                 use_pos_encode=True,
@@ -156,7 +157,7 @@ model_flow = dict(
     ),
     loss_func_cfg=dict(
         type="ACTKLLoss",
-        kl_weight=10,
+        kl_weight=30,
     ),
     train_mode=True,
     unfold_inputs=True,
@@ -171,17 +172,17 @@ dataloader = dict(
         meta_file={
             "so_arm101": {
                 "pick_toy": {
-                    "num_episodes": 10,
+                    "num_episodes": 35,
                     "episode_format": "episode_{:d}.hdf5",
-                    "train": "/root/workspace/act/datasets/",
-                    "val": "/root/workspace/act/datasets/",
-                    "norm_stats": "/root/workspace/act/datasets/norm_stats.pkl",
+                    "train": "/root/autodl-tmp/pick_toy2/",
+                    "val": "/root/autodl-tmp/pick_toy2/",
+                    "norm_stats": "/root/autodl-tmp/pick_toy2/norm_stats.pkl",
                 }
             }
         },
         task_name="pick_toy",
         robot_name="so_arm101",
-        camera_names=["top"],
+        camera_names=["top", "hand"],
         transforms=[
             dict(
                 type="ToTorchTensor",
@@ -202,10 +203,10 @@ dataloader = dict(
     ),
     batch_size=BATCH_SIZE,
     seed=seed,
-    num_workers=16,
+    num_workers=4,
     pin_memory=True,
-    prefetch_factor=2,
-    persistent_workers=True,
+    prefetch_factor=None,
+    persistent_workers=False,
     to_cuda=True,
     drop_last=True,
 )
@@ -214,8 +215,18 @@ dataloader = dict(
 ckpt = dict(
     pretrain_model=None,
     ckpt2model_json=None,
-    to_cuda=False,
+    to_cuda=True,
 )
 
 
 # ======================== infer =======================
+infer = dict(
+    type="BaseInfer",
+    infer_type="open_loop",
+    export_type=None,
+    eval_ckpt_list=[
+        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline4/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
+    ],
+    use_kf=False,
+    infer_chunk_step=5,
+)
