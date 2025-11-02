@@ -131,9 +131,9 @@ class FastAPIHTTPPolicyServer:
                 if self._infer_cnt >= self._infer_chunk_step:
                     self._infer_cnt = 0
                 infer_time = time.perf_counter() - infer_start
-                 # if self._use_kf:
+                # if self._use_kf:
                 if self._active_requests == 1:
-                    self._kl  = SimpleKalmanFilter(
+                    self._kl = SimpleKalmanFilter(
                         process_variance=0.01,
                         measurement_variance=0.1,
                         initial_position=model_action,
