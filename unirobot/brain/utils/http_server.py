@@ -17,6 +17,7 @@ from fastapi.responses import StreamingResponse
 import uvicorn
 
 from unirobot.utils.msgpack_numpy import Packer, unpackb
+from unirobot.brain.utils.filter_algo import SimpleKalmanFilter
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ class FastAPIHTTPPolicyServer:
         self._infer_cnt = 0
         self._action = None
         self._infer_chunk_step = infer_chunk_step
+        self._kl = None
         self._packer = Packer()
 
         # 创建 FastAPI 应用
@@ -129,6 +131,16 @@ class FastAPIHTTPPolicyServer:
                 if self._infer_cnt >= self._infer_chunk_step:
                     self._infer_cnt = 0
                 infer_time = time.perf_counter() - infer_start
+                # if self._use_kf:
+                if self._active_requests == 1:
+                    self._kl = SimpleKalmanFilter(
+                        process_variance=0.01,
+                        measurement_variance=0.1,
+                        initial_position=model_action,
+                    )
+                self._kl.predict()
+                filtered_position = self._kl.update(model_action)
+                model_action = filtered_position
 
                 # 构建响应
                 response_data = {
