@@ -60,7 +60,10 @@ if __name__ == "__main__":
         base_url="https://u2691691-9c18-54f8ef79.bjb1.seetacloud.com:8443"
     )
 
-    with h5py.File("episode_1.hdf5", "r") as root:
+    with h5py.File(
+        "/home/matrix97317/workspace/UniRobot/so101_dataset/pick_toy2/episode_0.hdf5",
+        "r",
+    ) as root:
         for frame_cnt in range(root["/action"].shape[0]):
             data = {}
             qpos = root["/observations/qpos"][frame_cnt]
