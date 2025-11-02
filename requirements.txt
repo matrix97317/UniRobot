@@ -6,7 +6,7 @@ importlib-metadata
 jupyterlab==3.0.16
 kafka-python
 mpi4py
-numpy
+numpy==1.25
 opencv-python-headless
 Pillow
 prettytable

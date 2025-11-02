@@ -26,6 +26,7 @@ from unirobot.utils.unirobot_slot import MOTOR
 from unirobot.utils.unirobot_slot import TELEOPERATOR
 from unirobot.robot.robot_interface import BaseRobot
 from unirobot.brain.data.dataset.act_dataset import ACTDataset
+from unirobot.robot.utils.http_client import HTTPPolicyClient
 
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,9 @@ class So101(BaseRobot):
             ),
             daemon=True,
         )
+        if self._mode == "model_server":
+            self._client = HTTPPolicyClient(self._model_cfg["base_url"])
+            self._start_infer = False
 
     def init_dataset(self, *args, **kwargs) -> None:
         """Init dataset."""
@@ -139,6 +143,10 @@ class So101(BaseRobot):
     def get_teleoperator(self, *args, **kwargs) -> Any:
         """Get env info from teleoperator."""
         return {"motor_info": self._teleoper.get()}
+
+    def get_robot_state(self, *args, **kwargs) -> Any:
+        """Get env info from teleoperator."""
+        return {"motor_info": self._motor.get()}
 
     def set_action(self, *args, **kwargs) -> Any:
         """Send action seq to motors."""
@@ -221,6 +229,117 @@ class So101(BaseRobot):
 
         logger.info("Close Robot %s", self)
 
+    def run_model_server(
+        self,
+    ) -> None:
+        """Run model server."""
+        try:
+            self._top_sensor.open()
+            self._hand_sensor.open()
+            self._motor.open()
+            self._teleoper.open()
+            while True:
+                loop_start = time.perf_counter()
+                sensor_info = self.get_observation()
+                robot_state = None
+                human_action = None
+                model_action = None
+                if self._start_infer:
+                    robot_state = self.get_robot_state()
+                    data = {}
+                    qpos = np.array(list(robot_state["motor_info"].values()))
+                    data["qpos"] = qpos
+                    _, top_img = cv2.imencode(
+                        ".jpg", sensor_info["top"], [int(cv2.IMWRITE_JPEG_QUALITY), 50]
+                    )
+                    _, hand_img = cv2.imencode(
+                        ".jpg", sensor_info["hand"], [int(cv2.IMWRITE_JPEG_QUALITY), 50]
+                    )
+                    data["hand"] = top_img
+                    data["top"] = hand_img
+                    s = time.perf_counter()
+                    output = self._client.msgpack_infer(data)
+                    e = time.perf_counter()
+                    logger.info(f"cost time {(e-s)*1000} ms")
+                    logger.info("Model Infer Action: %s", output["action"])
+                    model_action = output["action"]
+                    set_motor_info = {
+                        "shoulder_pan.pos": output["action"][0],
+                        "shoulder_lift.pos": output["action"][1],
+                        "elbow_flex.pos": output["action"][2],
+                        "wrist_flex.pos": output["action"][3],
+                        "wrist_roll.pos": output["action"][4],
+                        "gripper.pos": output["action"][5],
+                    }
+                    _ = self.set_action(action=set_motor_info)
+
+                if not self._start_infer:
+                    robot_state = self.get_teleoperator()
+                    human_action = self.set_action(action=robot_state["motor_info"])
+                    logger.info("Human Infer Action: %s", human_action)
+
+                dt_s = time.perf_counter() - loop_start
+                if (1 / self._fps - dt_s) < 0:
+                    logger.warning(
+                        f"Run So101 too slow: {dt_s*1e3:.2f}ms, expect {(1/self._fps)*1e3:.2f}ms"
+                    )
+                    time.sleep(1 / self._fps)
+                else:
+                    time.sleep(1 / self._fps - dt_s)
+                loop_s = time.perf_counter() - loop_start
+                logger.info(f"\ntime: {loop_s * 1e3:.2f}ms ({1 / loop_s:.0f} Hz)")
+                if self._use_rl:
+                    logger.info("Collect Frame ID: %s", self._frame_count)
+                    self._colloct_data["top"].append(sensor_info["top"])
+                    self._colloct_data["hand"].append(sensor_info["hand"])
+                    self._colloct_data["obs_action"].append(
+                        np.array(list(robot_state["motor_info"].values()))
+                    )
+                    self._colloct_data["model_action"].append(model_action)
+                    self._colloct_data["human_action"].append(human_action)
+
+                    self._frame_count += 1
+                if enter_pressed("s"):
+                    if not self._start_infer:
+                        self._frame_count = 0
+                        self._start_infer = True
+                    else:
+                        self._start_infer = False
+                        self._count_episode += 1
+                        # self._data_queue.put(self._colloct_data)
+                        # self._colloct_data = {
+                        #     "top": [],
+                        #     "hand": [],
+                        #     "obs_action": [],
+                        #     "action": [],
+                        # }
+                        # logger.info("Save Episode ID: %s", self._count_episode)
+                        # time.sleep(1)
+            # self._motor.close()
+            # self._top_sensor.close()
+            # self._hand_sensor.close()
+            # self._teleoper.close()
+        except Exception as e:
+            logger.error("So101 occur error: %s", e)
+            self._motor.close()
+            self._top_sensor.close()
+            self._hand_sensor.close()
+            self._teleoper.close()
+        except KeyboardInterrupt:
+            logger.error("Starting Close Robot..... %s", self)
+            # logger.warning("Process the remaining data")
+            # self._data_queue.join()
+            self._motor.close()
+            self._top_sensor.close()
+            self._hand_sensor.close()
+            self._teleoper.close()
+            # logger.warning("All data processed")
+            # logger.info("start compute norm stats")
+            # self._compte_norm_stats()
+            logger.error("Finished Close Robot %s", self)
+
+        logger.info("Close Robot %s", self)
+
     def run_model(self, *args, **kwargs) -> None:
         """Run model inference mode."""
         if self._mode == "teleoperation":
@@ -234,6 +353,8 @@ class So101(BaseRobot):
         """Run robot."""
         if self._mode == "teleoperation":
             self.run_teleoperation()
+        if self._mode == "model_server":
+            self.run_model_server()
 
     def pre_process(self, *args, **kwargs) -> None:
         """Run model pre process."""

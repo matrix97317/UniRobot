@@ -46,7 +46,7 @@ robot = dict(
         port="/dev/ttyACM0",
         use_degrees=False,
     ),
-    model_cfg=None,
+    model_cfg=dict(base_url="https://u2691691-9c18-54f8ef79.bjb1.seetacloud.com:8443"),
 )
 
 # ============Brain Config================
