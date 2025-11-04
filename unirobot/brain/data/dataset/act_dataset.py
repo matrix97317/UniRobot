@@ -178,7 +178,7 @@ class ACTDataset(BaseDataset):
             else np.random.randint(0, 20)
         )
 
-        rand_aug =  bool(np.random.random() < 0.3)
+        rand_aug = bool(np.random.random() < 0.3)
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self._camera_names:
