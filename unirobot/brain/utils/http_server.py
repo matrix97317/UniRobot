@@ -33,6 +33,7 @@ class FastAPIHTTPPolicyServer:
         metadata: Optional[dict] = None,
         max_batch_size: int = 10,
         infer_chunk_step: int = 0,
+        use_kf: bool = False,
     ) -> None:
         self._policy = policy
         self._host = host
@@ -44,6 +45,7 @@ class FastAPIHTTPPolicyServer:
         self._infer_cnt = 0
         self._action = None
         self._infer_chunk_step = infer_chunk_step
+        self._use_kf = use_kf
         self._kl = None
         self._packer = Packer()
 
@@ -131,16 +133,16 @@ class FastAPIHTTPPolicyServer:
                 if self._infer_cnt >= self._infer_chunk_step:
                     self._infer_cnt = 0
                 infer_time = time.perf_counter() - infer_start
-                # if self._use_kf:
-                if self._active_requests == 1:
-                    self._kl = SimpleKalmanFilter(
-                        process_variance=0.01,
-                        measurement_variance=0.1,
-                        initial_position=model_action,
-                    )
-                self._kl.predict()
-                filtered_position = self._kl.update(model_action)
-                model_action = filtered_position
+                if self._use_kf:
+                    if self._active_requests == 1:
+                        self._kl = SimpleKalmanFilter(
+                            process_variance=0.01,
+                            measurement_variance=0.1,
+                            initial_position=model_action,
+                        )
+                    self._kl.predict()
+                    filtered_position = self._kl.update(model_action)
+                    model_action = filtered_position
 
                 # 构建响应
                 response_data = {

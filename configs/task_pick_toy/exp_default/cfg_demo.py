@@ -53,7 +53,7 @@ robot = dict(
 
 # deterministic seed
 seed = 666
-BATCH_SIZE = 4
+BATCH_SIZE = 8
 EPOCH = 16000
 # define trainer params
 trainer = dict(
@@ -120,7 +120,7 @@ model_flow = dict(
         type="ACTModel",
         camera_names=["top", "hand"],
         state_dim=6,
-        chunk_size=40,
+        chunk_size=100,
         sub_module_cfg=dict(
             backbone=dict(
                 type="ResNet18",
@@ -172,11 +172,11 @@ dataloader = dict(
         meta_file={
             "so_arm101": {
                 "pick_toy": {
-                    "num_episodes": 35,
+                    "num_episodes": 128,
                     "episode_format": "episode_{:d}.hdf5",
-                    "train": "/root/autodl-tmp/pick_toy2/",
-                    "val": "/root/autodl-tmp/pick_toy2/",
-                    "norm_stats": "/root/autodl-tmp/pick_toy2/norm_stats.pkl",
+                    "train": "/root/autodl-tmp/pick_cube3/",
+                    "val": "/root/autodl-tmp/pick_cube3/",
+                    "norm_stats": "/root/autodl-tmp/pick_cube3/norm_stats.pkl",
                 }
             }
         },
@@ -225,8 +225,9 @@ infer = dict(
     infer_type="open_loop",
     export_type=None,
     eval_ckpt_list=[
-        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline4/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
+        "/home/None/unirobot_outputs/task_pick_toy/exp_default/baseline5/ckpt/checkpoint_pipeline_rank_0_last.pth.tar"
     ],
     use_kf=False,
-    infer_chunk_step=0,
+    infer_chunk_step=10,
+    val_idx=10
 )
