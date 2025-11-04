@@ -122,7 +122,6 @@ class ACTDataset(BaseDataset):
             else:
                 start_ts = np.random.choice(root["/action"].shape[0])
             if start_ts + 50 >= episode_len:
-                start_ts = start_ts
                 if start_ts == episode_len - 1:
                     start_ts = episode_len - 2
             else:
@@ -172,10 +171,14 @@ class ACTDataset(BaseDataset):
         rand_w = np.random.randint(0, 640 - 101)
         mask = np.zeros((100, 100, 3))
         rand_brightness = np.random.choice([-1, 1], size=1)
-        
-        rand_brightness_value = np.random.randint(30, 80) if rand_brightness == 1 else  np.random.randint(0, 20)
-        
-        rand_aug = True if np.random.random() < 0.3 else False
+
+        rand_brightness_value = (
+            np.random.randint(30, 80)
+            if rand_brightness == 1
+            else np.random.randint(0, 20)
+        )
+
+        rand_aug =  bool(np.random.random() < 0.3)
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self._camera_names:
