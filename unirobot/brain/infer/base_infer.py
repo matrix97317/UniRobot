@@ -54,7 +54,7 @@ class BaseInfer:
         infer_chunk_step: int = 0,
         host_addr: str = "127.0.0.1",
         host_port: int = 6008,
-        val_idx:int =0,
+        val_idx: int = 0,
     ) -> None:
         """Init BaseInfer based config dict."""
         self._cfg = cfg
@@ -69,7 +69,7 @@ class BaseInfer:
         self._use_kf = use_kf
         self._infer_chunk_step = infer_chunk_step
         self._infer_cnt = 0
-        self._val_idx =val_idx
+        self._val_idx = val_idx
 
         self.build_dataset()
         self.build_model()
@@ -90,7 +90,7 @@ class BaseInfer:
             port=host_port,
             metadata=server_metadata,
             infer_chunk_step=infer_chunk_step,
-            use_kf=use_kf
+            use_kf=use_kf,
         )
 
     def build_dataset(
@@ -153,7 +153,9 @@ class BaseInfer:
         self._model.eval()
         infer_cnt = 0
         chunk_action = []
-        for idx, data in enumerate(self._dataset.get_infer_data(epsoide_idx=self._val_idx )):
+        for idx, data in enumerate(
+            self._dataset.get_infer_data(epsoide_idx=self._val_idx)
+        ):
             if data is not None:
                 data["actions"] = data["actions"].cuda()
                 data["image"] = data["image"].cuda()

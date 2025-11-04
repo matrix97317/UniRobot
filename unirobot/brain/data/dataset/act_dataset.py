@@ -112,6 +112,7 @@ class ACTDataset(BaseDataset):
         aligned_action_shape = (550, 6)
         aligned_episode_len = 550
         aligned_action = None
+        start_ts = 0
         with h5py.File(hdf5_file, "r") as root:
             # original_action_shape = (370,6) #root["/action"].shape
             # episode_len = 370#original_action_shape[0]
@@ -120,12 +121,12 @@ class ACTDataset(BaseDataset):
                 start_ts = 0
             else:
                 start_ts = np.random.choice(root["/action"].shape[0])
-            if start_ts+50>=episode_len:
-                start_ts=start_ts
-                if start_ts==episode_len-1:
-                    start_ts=episode_len-2
+            if start_ts + 50 >= episode_len:
+                start_ts = start_ts
+                if start_ts == episode_len - 1:
+                    start_ts = episode_len - 2
             else:
-                start_ts=start_ts+50
+                start_ts = start_ts + 50
             # get observation at start_ts only
             qpos = root["/observations/qpos"][start_ts]
             # qvel = root["/observations/qvel"][start_ts]
@@ -139,10 +140,10 @@ class ACTDataset(BaseDataset):
             # get all actions after and including start_ts
             # TODO: collect data error: qpos==action
             action = root["/action"][
-                min(episode_len-1, start_ts + 1) : episode_len
+                min(episode_len - 1, start_ts + 1) : episode_len
             ]  # hack, to make timesteps more aligned
-            if action.shape[0]>aligned_episode_len:
-                aligned_action = action[:aligned_episode_len,:]
+            if action.shape[0] > aligned_episode_len:
+                aligned_action = action[:aligned_episode_len, :]
             else:
                 aligned_action = action
 
@@ -166,17 +167,15 @@ class ACTDataset(BaseDataset):
         is_pad = np.zeros(aligned_episode_len)
         is_pad[aligned_action.shape[0] :] = 1
 
-
         # img aug
-        rand_h = np.random.randint(0, 480-101)
-        rand_w = np.random.randint(0, 640-101)
-        mask = np.zeros((100,100,3))
+        rand_h = np.random.randint(0, 480 - 101)
+        rand_w = np.random.randint(0, 640 - 101)
+        mask = np.zeros((100, 100, 3))
         rand_brightness = np.random.choice([-1, 1], size=1)
-        if rand_brightness==1:
-            rand_brightness_value = np.random.randint(30,80)
-        else:
-            rand_brightness_value = np.random.randint(0,20)
-        rand_aug = True if np.random.random()<0.3 else False
+        
+        rand_brightness_value = np.random.randint(30, 80) if rand_brightness == 1 else  np.random.randint(0, 20)
+        
+        rand_aug = True if np.random.random() < 0.3 else False
         # new axis for different cameras
         all_cam_images = []
         for cam_name in self._camera_names:
@@ -185,13 +184,13 @@ class ACTDataset(BaseDataset):
             #     breakpoint()
             img = cv2.imdecode(image_dict[cam_name], cv2.IMREAD_COLOR)[:, :, ::-1]
             if rand_aug:
-                if cam_name=='top':
-                    img[rand_h:rand_h+100,rand_w:rand_w+100,:]=mask
-                img = cv2.convertScaleAbs(img, alpha=float(rand_brightness), beta=float(rand_brightness_value)) # beta为正，提高亮度
-                
-            all_cam_images.append(
-                img[None,]
-            )
+                if cam_name == "top":
+                    img[rand_h : rand_h + 100, rand_w : rand_w + 100, :] = mask
+                img = cv2.convertScaleAbs(
+                    img, alpha=float(rand_brightness), beta=float(rand_brightness_value)
+                )  # beta为正，提高亮度
+
+            all_cam_images.append(img[None,])
             # all_cam_images.append(image_dict[cam_name])
         all_cam_images = np.concatenate(all_cam_images, axis=0)
         # print(all_cam_images.shape)

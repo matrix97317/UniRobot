@@ -229,5 +229,5 @@ infer = dict(
     ],
     use_kf=False,
     infer_chunk_step=10,
-    val_idx=10
+    val_idx=10,
 )
