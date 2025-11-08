@@ -128,7 +128,19 @@ class FastAPIHTTPPolicyServer:
                 infer_start = time.perf_counter()
                 if self._infer_cnt == 0:
                     self._action = self._policy(obs)
+                    # import pickle
+                    # with open("action.pkl","wb") as fin:
+                    #     pickle.dump(self._action,fin)
+                        
                 model_action = self._action[self._infer_cnt, :]
+                model_action[5] =  self._action[self._infer_cnt+30, 5]
+                if model_action[5]>25:
+                    
+                    # model_action[2] =  self._action[self._infer_cnt+60, 2]
+                    model_action[3] =  self._action[self._infer_cnt+50, 3]
+                # if model_action[5]<2:
+                #     model_action[5] =  self._action[self._infer_cnt+60, 5]
+                    
                 self._infer_cnt = self._infer_cnt + 1
                 if self._infer_cnt >= self._infer_chunk_step:
                     self._infer_cnt = 0
