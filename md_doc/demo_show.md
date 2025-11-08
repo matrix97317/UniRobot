@@ -24,7 +24,7 @@ ex: bash brain_spawn_run.sh 1 configs/task_pick_toy/exp_default/cfg_demo.py -n b
 bash brain_spawn_run.sh GPU_NUM /path/your_config -n exp_name -it open_loop
 ex: bash brain_spawn_run.sh 1 configs/task_pick_toy/exp_default/cfg_demo.py -n baseline -it open_loop
 ```
-
+OpenLoop:[![视频预览](../asset/img/open_loop_comparison.jpg)]()
 ### Robot Running Model
 
 - Model Server Mode (run model on Cloud Server)
@@ -38,6 +38,7 @@ ex: bash brain_spawn_run.sh 1 configs/task_pick_toy/exp_default/cfg_demo.py -n b
 # Start Robot Client
 pipenv run unirobot robot-run /path/your_config -n task_name -rt 'model_server'
 ```
+Video:[![视频预览](../asset/img/demo-0.jpg)](https://www.alipan.com/s/yEqYLJLz1bv)
 
 - Model Local Mode (run model on Robot)
 ```

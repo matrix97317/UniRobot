@@ -193,7 +193,7 @@ class BaseInfer:
                         "model": model_action[0],
                     }
                 )
-                if idx == 50:
+                if idx == 330:
                     for i in range(output["a_hat"][0].shape[0]):
                         chunk_model_action = (
                             output["a_hat"].cpu().detach().numpy()[0, i, :]
