@@ -243,7 +243,7 @@ class So101(BaseRobot):
             self._motor.open()
             self._teleoper.open()
             init_pos_cnt = 0
-            gripper_frame_cnt =[]
+            gripper_frame_cnt = []
             griper = 0
             while True:
                 loop_start = time.perf_counter()
@@ -256,12 +256,11 @@ class So101(BaseRobot):
                     data = {}
                     qpos = np.array(list(robot_state["motor_info"].values()))
 
-                    if qpos[5]>2.5 and qpos[5]<3.0:
-                        qpos[5]=qpos[5]-1.63
-                    if qpos[5]>9 and qpos[5]<10:
-                        qpos[5]=qpos[5]-8.33
-                   
-                    
+                    if qpos[5] > 2.5 and qpos[5] < 3.0:
+                        qpos[5] = qpos[5] - 1.63
+                    if qpos[5] > 9 and qpos[5] < 10:
+                        qpos[5] = qpos[5] - 8.33
+
                     data["qpos"] = qpos
                     _, top_img = cv2.imencode(
                         ".jpg", sensor_info["top"], [int(cv2.IMWRITE_JPEG_QUALITY), 50]
@@ -276,7 +275,7 @@ class So101(BaseRobot):
                     e = time.perf_counter()
                     logger.info(f"cost time {(e-s)*1000} ms")
                     logger.info("Model Infer Action: %s", output["action"])
-                    griper=output["action"][5]
+                    griper = output["action"][5]
 
                     # if  output["action"][5]>30:
                     #     griper=output["action"][5]-20
@@ -287,28 +286,29 @@ class So101(BaseRobot):
                     #     griper=1.4
                     #     gripper_frame_cnt=[]
                     # else:
-                    #     
+                    #
 
                     model_action = output["action"]
-                    if init_pos_cnt >100:
+                    if init_pos_cnt > 100:
                         set_motor_info = {
                             "shoulder_pan.pos": output["action"][0],
                             "shoulder_lift.pos": output["action"][1],
                             "elbow_flex.pos": output["action"][2],
                             "wrist_flex.pos": output["action"][3],
                             "wrist_roll.pos": output["action"][4],
-                            "gripper.pos":griper,
+                            "gripper.pos": griper,
                         }
                     else:
-                        set_motor_info={'shoulder_pan.pos': -6.387665198237897,
-                        'shoulder_lift.pos': -53.157674613132585, 
-                        'elbow_flex.pos': 31.609977324263014, 
-                        'wrist_flex.pos': 89.33901918976545, 
-                        'wrist_roll.pos': 9.290187891440496, 
-                        'gripper.pos': 0.7961783439490446
+                        set_motor_info = {
+                            "shoulder_pan.pos": -6.387665198237897,
+                            "shoulder_lift.pos": -53.157674613132585,
+                            "elbow_flex.pos": 31.609977324263014,
+                            "wrist_flex.pos": 89.33901918976545,
+                            "wrist_roll.pos": 9.290187891440496,
+                            "gripper.pos": 0.7961783439490446,
                         }
                     _ = self.set_action(action=set_motor_info)
-                    init_pos_cnt+=1
+                    init_pos_cnt += 1
 
                 if not self._start_infer:
                     robot_state = self.get_teleoperator()

@@ -70,7 +70,8 @@ disable=c-extension-no-member,
         unsubscriptable-object,
         unknown-option-value,
         too-many-statements,
-        import-error
+        import-error,
+        too-many-branches
 
 
 
