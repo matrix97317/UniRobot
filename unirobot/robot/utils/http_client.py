@@ -61,7 +61,7 @@ if __name__ == "__main__":
     )
 
     with h5py.File(
-        "/home/matrix97317/workspace/UniRobot/so101_dataset/pick_toy2/episode_0.hdf5",
+        "/home/matrix97317/workspace/UniRobot/so101_dataset/pick_cube_demo/episode_0.hdf5",
         "r",
     ) as root:
         for frame_cnt in range(root["/action"].shape[0]):
